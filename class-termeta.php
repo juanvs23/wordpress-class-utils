@@ -3,6 +3,23 @@
  * class ColtmanTermMeta
  * 
  * Register and manage custom term meta fields.
+ * 
+ * @package Coltman
+ * @author Juan Carlos Avila
+ * @param string $taxonomy
+ * @param array $config [
+ *    'taxonomy' => string,
+ *    'title' => string,
+ *    'fields' => array]
+ * @param array $fields [
+ *    'label' => [
+ *            'label' => string,
+ *            'id' => string,
+ *            'type' => string,
+ *            'default' => string,
+ *            'description' => string
+ *        ],
+ *      ]
  *
  * @since 1.0.0
  */

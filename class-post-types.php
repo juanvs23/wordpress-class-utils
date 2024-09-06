@@ -3,17 +3,51 @@
 if (!class_exists('ColtmanRegisterPost')) {
 
     /**
+     * 
      * Class ColtmanRegisterPost
-     * @param array $labelArgs
-     * @param string $post_name
-     * @param array $args
-     * @param array $supports 
-     * @param array $taxonomies 
+     * @param array $labelArgs [
+     *            'name' => __('Eventos de local 7', 'restaurant-tools'),
+     *           'item' => __('Evento', 'restaurant-tools'),
+     *           'domain' => 'restaurant-tools',
+     *
+     *       ]
+     * @param string $post_name 'local7_events'
+     * @param array $args [
+     *    'description' => __('Lista de eventos', 'restaurant-tools'),
+     *    'hierarchical' => bool,
+     *    'public' => bool,
+     *        'show_ui' => bool,
+     *        'show_in_menu' => bool,
+     *        'show_in_nav_menus' => bool,
+     *        'show_in_admin_bar' => bool,
+     *        'menu_position' => int,
+     *        'menu_icon' => string,
+     *        'can_export' => bool,
+     *        'has_archive' => bool,
+     *        'exclude_from_search' => bool,
+     *        'capability_type' => string,
+     *        'publicly_queryable' => bool,
+     *        'show_in_rest' => bool,
+     *        'map_meta_cap' => bool,
+     *        'rest_base' => string,
+     * ]
+     * @param array $supports [
+     *    'thumbnail',
+     *    'editor',
+     *    'author',
+     *    'excerpt',
+     *    'custom-fields',
+     *    'revisions',
+     *    'title'
+     * ]
+     * @param array $taxonomies [
+     *    'taxonomy_names' // string
+     * ]
      * @param array|bool $rewrite [
      *    'slug' => 'slug',
-     *    'with_front' => true,
-     *    'pages' => true,
-     *    'feeds' => true,]
+     *    'with_front' => bool,
+     *    'pages' => bool,
+     *    'feeds' => bool,] or false
      * @return void
      * @since 1.0.0
      * @author Coltman

@@ -234,20 +234,21 @@ if(!class_exists('ColtmanCreateMetabox')) {
 	
 		private function fields_table() {
 			?>
-		<h3 class="description"><?php echo $this->config['description']; ?></h3>
-		<table class="form-table" role="presentation">
-				<tbody><?php
-					foreach ( $this->config['fields'] as $field ) {
-						?><tr>
-							<th scope="row"><?php $this->label( $field ); ?></th>
-							<td>
-								<?php $this->field( $field ); ?>
-								<?php $this->description( $field ); ?>
-							</td>
-						</tr><?php
-					}
-				?></tbody>
-			</table><?php
+				<h3 class="description"><?php echo $this->config['description']; ?></h3>
+				<table class="form-table" role="presentation">
+					<tbody><?php
+						foreach ( $this->config['fields'] as $field ) {
+							?><tr>
+								<th scope="row"><?php $this->label( $field ); ?></th>
+								<td>
+									<?php $this->field( $field ); ?>
+									<?php $this->description( $field ); ?>
+								</td>
+							</tr><?php
+						}
+					?></tbody>
+				</table>
+			<?php
 		}
 
 		private function description( $field ) {
@@ -438,6 +439,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 		}
 	
 		private function select( $field ) {
+
 			printf(
 				'<select id="%s" class="block w-full regular-text min-h-10" name="%s">%s</select>',
 				$field['id'], $field['id'],
@@ -455,6 +457,9 @@ if(!class_exists('ColtmanCreateMetabox')) {
 		private function select_options( $field ) {
 			$options = '';
 			foreach ( $field['options'] as $option ) {
+				if ( $this->value( $field ) === $option['value'] ) {
+					$option['selected'] = true;
+				}
 				$options .= sprintf(
 					'<option value="%s" %s>%s</option>',
 					$option['value'],

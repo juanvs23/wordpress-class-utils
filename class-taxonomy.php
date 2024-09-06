@@ -1,5 +1,32 @@
 <?php
 if(!class_exists('ColtmanRegisterTaxonomy')){
+
+
+    /*
+      [
+                'plural_name' => __( 'Tipos de platillos', 'restaurant-tools' ),
+                'singular_name' => __( 'Tipo de platillo', 'restaurant-tools' ),
+                'item' => __( 'Tipo de platillo', 'restaurant-tools' ),
+                'text_domain' => 'restaurant-tools',
+                'hierarchical' => false,
+                'public' => true,
+                'show_ui' => true,
+                'show_admin_column' => true,
+                'show_in_nav_menus' => true,
+                'show_tagcloud' => true,
+                'show_in_rest' => true,
+                'rest_base' => 'menus',
+            ],
+            'coltman_restaurant_menu',// taxonomy
+            [
+                'local7_dish_foods' // post type
+            ],
+            [
+                'slug' => __( 'carta-de-platillos', 'restaurant-tools' ),
+                'with_front' => true,
+                'hierarchical' => true,
+            ]
+    */
     class ColtmanRegisterTaxonomy{
         
         
