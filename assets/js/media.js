@@ -14,6 +14,7 @@ jQuery.noConflict();
                 multiple: true
             }).on('select', function() {
                 let attachment = rwpMediaUploader.state().get('selection').first().toJSON();
+                console.log(attachment);
                 button.prev().val(attachment[button.data('return')]);
                 if(e.currentTarget.parentNode.classList.contains('get-image')){
                     const imageItem = e.currentTarget.parentNode
@@ -22,7 +23,7 @@ jQuery.noConflict();
                     const inputItem = imageItem.querySelector('.image-url');
                     const dataItem = imageItem.parentNode.dataset.item
                     let imageGallery = JSON.parse(inputGallery.value)
-                    inputGallery.value = JSON.stringify([...imageGallery,{item: dataItem, url: inputItem.value}]);
+                    inputGallery.value = JSON.stringify([...imageGallery,{id: attachment.id, alt: attachment.alt,sizes: attachment.sizes,title: attachment.title, item: dataItem, url: inputItem.value}]);
                 }
             }).open();
         });
