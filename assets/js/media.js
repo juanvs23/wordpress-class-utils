@@ -1,7 +1,7 @@
 
 jQuery.noConflict();
 (function($) {
-    $(function() {
+    $(document).ready(function($) {
         $('body').on('click', '.rwp-media-toggle', function(e) {
             e.preventDefault();
             let button = $(this);
@@ -23,11 +23,10 @@ jQuery.noConflict();
                     const inputItem = imageItem.querySelector('.image-url');
                     const dataItem = imageItem.parentNode.dataset.item
                     let imageGallery = JSON.parse(inputGallery.value)
-                    inputGallery.value = JSON.stringify([...imageGallery,{id: attachment.id, alt: attachment.alt,sizes: attachment.sizes,title: attachment.title, item: dataItem, url: inputItem.value}]);
+                    inputGallery.value = JSON.stringify([...imageGallery,{id: attachment.id, alt: attachment.alt,sizes: attachment.sizes,title: attachment.title,mime: attachment.mime, height: attachment.height, width: attachment.width, item: dataItem, url: inputItem.value}]);
                 }
             }).open();
         });
-        $('.rwp-color-picker').wpColorPicker();
     });
 })(jQuery);
 
@@ -66,3 +65,101 @@ function addiTemImage(e){
     galleryContainer.appendChild(galleryItemExample);
 }
 
+// Copy Accordeon Item
+function cloneElement(parentElment){
+   // console.log(parentElment);
+    const parentAccordeon = parentElment,
+        post_accordion = parentAccordeon.querySelector('input[type="hidden"]')
+        accordion_container = parentAccordeon.querySelector('.accordion-container'),
+        accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
+    const baseItem = accordion_items[0].cloneNode(true);
+    const  title = baseItem.querySelector('.input-title');
+    const content = baseItem.querySelector('textarea');
+
+    let proced = true;
+
+    accordion_items.forEach((item) => {
+       if (item.querySelector('.input-title').value == '' && item.querySelector('textarea').value == '') {
+        console.log('object');
+        proced = false;
+       }
+    });
+
+    if (proced === false) return null;
+    title.value = '';
+    content.value = '';
+    const baseId = baseItem.dataset.id
+    const post_accordion_id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+"_parent";
+    baseItem.id = post_accordion_id;
+   // console.log(accordion_container);
+    accordion_container.appendChild(baseItem );
+}
+
+// add Accordeon Item
+function addAccordeonItem(e){
+   const parentAccordeon = e.parentNode.parentNode;
+   const post_accordion = parentAccordeon.querySelector('input[type="hidden"]')
+   const accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
+   const post_accordion_data = parentAccordeon.querySelector('input[type="hidden"]').value;
+   const post_accordionData = JSON.parse(post_accordion_data);
+   accordion_items.forEach((item,index) => {
+      const title = item.querySelector('.input-title').value;
+      const textarea = item.querySelector('textarea').value;
+      const post_accordion_id = item.id;
+      //if (title == '' && textarea == '') return null;
+      const itemData = {id: post_accordion_id, title: title, content: textarea};
+      if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '' && textarea !== '') {
+         post_accordionData.push(itemData);
+         post_accordion.value = JSON.stringify(post_accordionData);
+      };
+   })
+   cloneElement(parentAccordeon);
+}
+
+
+// remove Accordeon Item
+function removeAccordeonItem(e){
+
+    const item = e.parentNode.parentNode;
+    const parentItem = item.parentNode;
+    const post_accordionElement = parentItem.parentNode.querySelector('input[type="hidden"]');
+    const itemId = item.id;
+    const postAccordeonData = JSON.parse(post_accordionElement.value);
+    const newpostAccordeonData = postAccordeonData.filter((item) => item.id != itemId);
+    post_accordionElement.value = JSON.stringify(newpostAccordeonData);
+
+    console.log(post_accordionElement, 'post_accordionElement');
+    if(parentItem.children.length>1){
+        item.remove();
+    }else{
+        item.querySelector('.input-title').value = '';
+        item.querySelector('textarea').value = '';
+    };
+
+}
+
+// save Accordeon Item data
+function saveAccordeonItemData(e){
+    const parenContainer = e.parentNode.parentNode.parentNode.parentNode;
+    const item = e.parentNode.parentNode;
+    console.log(item,'item');
+    const post_accordionElement = parenContainer.querySelector('input[type="hidden"]');
+    const postAccordeonData = JSON.parse(post_accordionElement.value);
+    const title = item.querySelector('.input-title');
+    const content = item.querySelector('textarea');
+    const itemId = item.id;
+    console.log(title.value, content.value, 'title, content');
+    if (title.value =='' || content.value =='') return false;
+
+    const newpostAccordeonData = postAccordeonData.push({id: itemId, title: title.value, content: content.value});
+    console.log(postAccordeonData);
+    post_accordionElement.value = JSON.stringify(postAccordeonData);
+    return true
+}
+
+// save Accordeon Item
+function saveAccordeonItem(e){
+    const saved = saveAccordeonItemData(e);
+    if (saved === false) return null;
+    cloneElement(e.parentNode.parentNode.parentNode.parentNode);
+}

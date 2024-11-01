@@ -119,8 +119,8 @@ if (!class_exists('ColtmanTermMeta')) {
             $taxonomy_url =  isset($_GET['taxonomy'])? $_GET['taxonomy'] : '';
             if (  $taxonomy_name == $taxonomy_url ) {
                 ?>
-                <script defer src="<?php echo plugin_dir_url(__FILE__).'assets/js/media.js';?>"></script>
-                	<!-- <script  src="<?php echo plugin_dir_url(__FILE__).'assets/js/tailwind.js';?>"></script> -->
+                <script defer src="<?php echo get_stylesheet_directory_uri().'/classes/assets/js/media.js';?>"></script>
+                	
                 <?php
                 ?>
                 	<?php

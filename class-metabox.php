@@ -37,12 +37,25 @@
  * 
  */
 if(!class_exists('ColtmanCreateMetabox')) {
+	
 	class ColtmanCreateMetabox {
 		private $config;
+		public $coltmanInputs;
+		/**
+		 * Constructor.
+		 *
+		 * Register hooks for rendering and saving custom post meta fields.
+		 *
+		 * @since 1.0.0
+		 * @access public
+		 *
+		 * @param array $config Metabox configuration.
+		 */
 		public function __construct($config) {
 		// var_dump(  $config );
 			$this->config = $config;
 			$this->process_cpts();
+			$this->coltmanInputs = class_exists('ColtmanInputFields') ? new ColtmanInputFields() : false;
 			add_action( 'add_meta_boxes', [ $this, 'add_meta_boxes' ] );
 			add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
 			add_action( 'admin_head', [ $this, 'admin_head' ] );
@@ -99,6 +112,12 @@ if(!class_exists('ColtmanCreateMetabox')) {
 }
 .w-full{
 	width: 100% ;
+}
+.bg-slate-100{
+	background-color: #e2e8f0;
+}
+.p-4{
+	padding: 1rem;
 }
 .flex {
     display: flex;
@@ -194,7 +213,17 @@ if(!class_exists('ColtmanCreateMetabox')) {
 .hover\:bg-red-600:hover {
     --tw-bg-opacity: 1;
     background-color: rgb(220 38 38 / var(--tw-bg-opacity));
-}				
+}
+.w-10\/12{
+	width: 83.333333%;
+	min-width: 83.333333%;
+	max-width: 83.333333%;
+}
+.w-2\/12{
+	width: 16.666667%;
+	min-width: 16.666667%;
+	max-width: 16.666667%;
+}			
 					</style>
 				
 				<?php
@@ -235,6 +264,11 @@ if(!class_exists('ColtmanCreateMetabox')) {
 		private function fields_table() {
 			?>
 				<h3 class="description"><?php echo $this->config['description']; ?></h3>
+				<style>
+					.wp-editor-container iframe {
+						max-height: 200px;
+					}
+				</style>
 				<table class="form-table" role="presentation">
 					<tbody><?php
 						foreach ( $this->config['fields'] as $field ) {
@@ -278,105 +312,40 @@ if(!class_exists('ColtmanCreateMetabox')) {
 	
 		private function field( $field ) {
 			
+			$value = $this->value( $field );
+			$checked = $this->checked( $field );
+			
 			switch ( $field['type'] ) {
 				case 'checkbox':
-					$this->checkbox( $field );
-
+					$this->coltmanInputs->checkbox( $field, $checked );
+					break;
+				case 'accordion':
+					$this->coltmanInputs->accordion( $field, $value );
 					break;
 				case 'date':
-					$this->input_minmax( $field );
+					$this->coltmanInputs->input_minmax( $field, $value );
 					break;
 				case 'editor':
-					$this->editor( $field );
+					$this->coltmanInputs->editor( $field, $value );
 					break;
 				case 'media':
-					echo '<div class="flex items-center justify-between w-full gap-2 min-h-10">';
-					$this->input( $field );
-					$this->media_button( $field );
-					echo '</div>';
+					$this->coltmanInputs->media( $field, $value );
 					break;
 				case 'gallery':
-					$this->gallery_input( $field );
+					$this->coltmanInputs->gallery_input( $field );
 					break;
 				case 'select':
-					$this->select( $field );
+					$this->coltmanInputs->select( $field, $value );
 					break;
 				case 'textarea':
-					$this->textarea( $field );
+					$this->coltmanInputs->textarea( $field, $value );
 					break;
 				default:
-					$this->input( $field );
+				$this->coltmanInputs->input( $field, $value );
 			}
 			
 		}
 	
-		private function gallery_input( $field ) {
-			$modal_button = isset( $field['modal-button'] ) ? $field['modal-button'] : __( 'Select this file', 'advanced-options' );
-			$modal_title = isset( $field['modal-title'] ) ? $field['modal-title'] : __( 'Choose a file', 'advanced-options' );
-			$return = isset( $field['return'] ) ? $field['return']: 'url';
-				
-			$text_button = isset( $field['button-text'] ) ? $field['button-text'] : __( 'Upload', 'advanced-options' );
-			$value = !is_null($this->value( $field )) && $this->value( $field )!='' ? json_decode($this->value( $field )) : [];
-			?>
-			<div class="gallery">
-				<input type="hidden" class="gallery-data"  name="<?php echo $field['id']; ?>" id="<?php echo $field['id']; ?>" value='<?php echo json_encode($value); ?>'>
-				<div class="flex flex-col w-full gap-4 pb-3 gallery-container" 
-					data-buttonmodal="<?php echo $modal_button; ?>"
-					data-buttonmodaltitle="<?php echo $modal_title; ?>"
-					data-buttonreturn="<?php echo $return; ?>">
-					<?php if (count($value)>0): 
-							foreach($value as $item){
-								$html ='';
-								$html .= '<div class="flex items-center justify-between gap-2 gallery-item" data-item="'.$item->item.'">';
-								$html .= '<div class="flex items-center justify-center w-full gap-2 get-image" >';
-								$html .= '<input type="text" class="block w-full h-4 px-3 py-2 rounded image-url" value="'.$item->url.'">';
-								$html .= '<button class="px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" ';
-								$html .= 'data-modal-button="'.$modal_button.'" ';
-								$html .= 'data-modal-title="'.$modal_title.'" ';
-								$html .= 'data-return="'.$return.'" ';
-								$html .= 'type="button">'.$text_button.'</button>';
-								$html .= '</div>';
-								$html .= '<button type="button" onclick="removeiTem(this)" class="px-3 py-2 text-white transition duration-300 bg-red-500 rounded btn btn-primary remove-image hover:bg-red-600">';
-								$html .=  __( 'Remove', 'addic-clinic-directory' );
-								$html .= '</button>';
-								$html .= '</div>';
-								echo $html;
-							}; ?>
-					<?php else: ?>
-						<div class="flex items-center justify-between gap-2 gallery-item" data-item="<?php echo date('YmdHis') . mt_rand(1000, 9999); ?>">
-							<div class="flex items-center justify-center w-full gap-2 get-image" >
-								<input type="text" class="block w-full h-4 px-3 py-2 rounded image-url">
-								<button 
-									class="px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" 
-									data-modal-button="<?php echo $modal_button; ?>" 
-									data-modal-title="<?php echo $modal_title; ?>"
-									data-return="<?php echo $return; ?>" type="button">
-									<?php echo $text_button; ?>
-								</button>
-							</div>
-							<button type="button" 
-								onclick="removeiTem(this)" 
-								class="px-3 py-2 text-white transition duration-300 bg-red-500 rounded btn btn-primary remove-image hover:bg-red-600">
-								<?php echo __( 'Remove', 'addic-clinic-directory' ); ?>
-							</button>
-						</div>
-					<?php endif; ?>
-
-				</div>
-
-				<button type="button"
-				onclick="addiTemImage(this)" 
-				class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded btn btn-primary add-image min-w-max hover:bg-blue-600">
-					<?php echo __( 'Add image', 'addic-clinic-directory' ); ?>
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-plus-lg" viewBox="0 0 16 16">
-  						<path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
-					</svg>
-				</button>
-
-			</div>
-			
-			<?php
-		}
 	
 		private function checkbox( $field ) {
 			printf(
@@ -386,99 +355,15 @@ if(!class_exists('ColtmanCreateMetabox')) {
 				isset( $field['description'] ) ? $field['description'] : ''
 			);
 		}
-	
-		private function editor( $field ) {
-			wp_editor( $this->value( $field ), $field['id'], [
-				'wpautop' => isset( $field['wpautop'] ) ? true : false,
-				'media_buttons' => isset( $field['media-buttons'] ) ? true : false,
-				'textarea_name' => $field['id'],
-				'textarea_rows' => isset( $field['rows'] ) ? isset( $field['rows'] ) : 20,
-				'teeny' => isset( $field['teeny'] ) ? true : false
-			] );
-		}
-	
-		private function input( $field ) {
-			if ( $field['type'] === 'media' ) {
-				$field['type'] = 'text';
-			}
-			if ( isset( $field['color-picker'] ) ) {
-				$field['class'] = 'rwp-color-picker';
-			}
-			printf(
-				'<input class="regular-text block w-full min-h-10 %s" id="%s" name="%s" %s type="%s" value="%s">',
-				isset( $field['class'] ) ? $field['class'] : '',
-				$field['id'], $field['id'],
-				isset( $field['pattern'] ) ? "pattern='{$field['pattern']}'" : '',
-				$field['type'],
-				$this->value( $field )
-			);
-		}
-	
-		private function input_minmax( $field ) {
-			printf(
-				'<input class="block w-full regular-text min-h-10" id="%s" %s %s name="%s" %s type="%s" value="%s">',
-				$field['id'],
-				isset( $field['max'] ) ? "max='{$field['max']}'" : '',
-				isset( $field['min'] ) ? "min='{$field['min']}'" : '',
-				$field['id'],
-				isset( $field['step'] ) ? "step='{$field['step']}'" : '',
-				$field['type'],
-				$this->value( $field )
-			);
-		}
-	
-		private function media_button( $field ) {
-			printf(
-				'<button class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" data-modal-button="%s" data-modal-title="%s" data-return="%s" id="%s_button" name="%s_button" type="button">%s</button>',
-				isset( $field['modal-button'] ) ? $field['modal-button'] : __( 'Select this file', 'advanced-options' ),
-				isset( $field['modal-title'] ) ? $field['modal-title'] : __( 'Choose a file', 'advanced-options' ),
-				$field['return'],
-				$field['id'], $field['id'],
-				isset( $field['button-text'] ) ? $field['button-text'] : __( 'Upload', 'advanced-options' )
-			);
-		}
-	
-		private function select( $field ) {
+		
 
-			printf(
-				'<select id="%s" class="block w-full regular-text min-h-10" name="%s">%s</select>',
-				$field['id'], $field['id'],
-				$this->select_options( $field )
-			);
-		}
 	
-		private function select_selected(  bool $selected = false ) {
-			if ( $selected ) {
-				return 'selected';
-			}
-			return '';
-		}
-	
-		private function select_options( $field ) {
-			$options = '';
-			foreach ( $field['options'] as $option ) {
-				if ( $this->value( $field ) === $option['value'] ) {
-					$option['selected'] = true;
-				}
-				$options .= sprintf(
-					'<option value="%s" %s>%s</option>',
-					$option['value'],
-					$this->select_selected(  $option['selected'] ),
-					$option['label']
-				);
-			}
-			return $options;
-		}
-	
-		private function textarea( $field ) {
-			printf(
-				'<textarea class="block w-full regular-text min-h-10" id="%s" name="%s" rows="%d">%s</textarea>',
-				$field['id'], $field['id'],
-				isset( $field['rows'] ) ? $field['rows'] : 5,
-				$this->value( $field )
-			);
-		}
-	
+		
+
+
+		/**
+		 * Get the value of a field.
+		 */
 		private function value( $field ) {
 			global $post;
 			if ( metadata_exists( 'post', $post->ID, $field['id'] ) ) {
@@ -490,7 +375,10 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			}
 			return str_replace( '\u0027', "'", $value );
 		}
-	
+
+		/**
+		 * Get the checked value of a field.
+		 */
 		private function checked( $field ) {
 			global $post;
 			if ( metadata_exists( 'post', $post->ID, $field['id'] ) ) {
