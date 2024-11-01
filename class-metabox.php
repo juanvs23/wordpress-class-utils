@@ -40,7 +40,6 @@ if(!class_exists('ColtmanCreateMetabox')) {
 	
 	class ColtmanCreateMetabox {
 		private $config;
-		public $coltmanInputs;
 		/**
 		 * Constructor.
 		 *
@@ -355,12 +354,60 @@ if(!class_exists('ColtmanCreateMetabox')) {
 				isset( $field['description'] ) ? $field['description'] : ''
 			);
 		}
-		
-
 	
-		
-
-
+		private function editor( $field ) {
+			wp_editor( $this->value( $field ), $field['id'], [
+				'wpautop' => isset( $field['wpautop'] ) ? true : false,
+				'media_buttons' => isset( $field['media-buttons'] ) ? true : false,
+				'textarea_name' => $field['id'],
+				'textarea_rows' => isset( $field['rows'] ) ? isset( $field['rows'] ) : 20,
+				'teeny' => isset( $field['teeny'] ) ? true : false,
+				'quicktags' => true,
+			] );
+		}
+	
+		private function input( $field ) {
+			if ( $field['type'] === 'media' ) {
+				$field['type'] = 'text';
+			}
+			if ( isset( $field['color-picker'] ) ) {
+				$field['class'] = 'rwp-color-picker';
+			}
+			printf(
+				'<input class="regular-text block w-full min-h-10 %s" id="%s" name="%s" %s type="%s" value="%s">',
+				isset( $field['class'] ) ? $field['class'] : '',
+				$field['id'], $field['id'],
+				isset( $field['pattern'] ) ? "pattern='{$field['pattern']}'" : '',
+				$field['type'],
+				$this->value( $field )
+			);
+		}
+	
+		private function input_minmax( $field ) {
+			printf(
+				'<input class="block w-full regular-text min-h-10" id="%s" %s %s name="%s" %s type="%s" value="%s">',
+				$field['id'],
+				isset( $field['max'] ) ? "max='{$field['max']}'" : '',
+				isset( $field['min'] ) ? "min='{$field['min']}'" : '',
+				$field['id'],
+				isset( $field['step'] ) ? "step='{$field['step']}'" : '',
+				$field['type'],
+				$this->value( $field )
+			);
+		}
+	
+		private function media_button( $field ) {
+			printf(
+				'<button class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" data-modal-button="%s" data-modal-title="%s" data-return="%s" id="%s_button" name="%s_button" type="button">%s</button>',
+				isset( $field['modal-button'] ) ? $field['modal-button'] : __( 'Select this file', 'advanced-options' ),
+				isset( $field['modal-title'] ) ? $field['modal-title'] : __( 'Choose a file', 'advanced-options' ),
+				$field['return'],
+				$field['id'], $field['id'],
+				isset( $field['button-text'] ) ? $field['button-text'] : __( 'Upload', 'advanced-options' )
+			);
+		}
+	
+	
 		/**
 		 * Get the value of a field.
 		 */
