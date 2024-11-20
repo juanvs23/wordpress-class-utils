@@ -1,6 +1,9 @@
 
+
 jQuery.noConflict();
+
 (function($) {
+   
     $(document).ready(function($) {
         $('body').on('click', '.rwp-media-toggle', function(e) {
             e.preventDefault();
@@ -75,11 +78,12 @@ function cloneElement(parentElment){
     const baseItem = accordion_items[0].cloneNode(true);
     const  title = baseItem.querySelector('.input-title');
     const content = baseItem.querySelector('textarea');
+    const image = baseItem.querySelector('.image-url-accodeon')
 
     let proced = true;
 
     accordion_items.forEach((item) => {
-       if (item.querySelector('.input-title').value == '' && item.querySelector('textarea').value == '') {
+       if (item.querySelector('.input-title').value == '' && item.querySelector('textarea').value == '' && image.value == '') {
         console.log('object');
         proced = false;
        }
@@ -88,11 +92,16 @@ function cloneElement(parentElment){
     if (proced === false) return null;
     title.value = '';
     content.value = '';
+    image.value = ''; 
     const baseId = baseItem.dataset.id
     const post_accordion_id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+"_parent";
     baseItem.id = post_accordion_id;
-   // console.log(accordion_container);
+   /*  baseItem.querySelector('texarea').id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+'-content'; */
+    console.log(content.id);
+    content.id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+'-content';
     accordion_container.appendChild(baseItem );
+
+  
 }
 
 // add Accordeon Item
@@ -105,10 +114,12 @@ function addAccordeonItem(e){
    accordion_items.forEach((item,index) => {
       const title = item.querySelector('.input-title').value;
       const textarea = item.querySelector('textarea').value;
+      const image = item.querySelector('.image-url-accodeon').value;
+      console.log(image);
       const post_accordion_id = item.id;
       //if (title == '' && textarea == '') return null;
-      const itemData = {id: post_accordion_id, title: title, content: textarea};
-      if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '' && textarea !== '') {
+      const itemData = {id: post_accordion_id, title: title, content: textarea, image: image};
+      if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
          post_accordionData.push(itemData);
          post_accordion.value = JSON.stringify(post_accordionData);
       };
@@ -134,6 +145,7 @@ function removeAccordeonItem(e){
     }else{
         item.querySelector('.input-title').value = '';
         item.querySelector('textarea').value = '';
+        item.querySelector('.image-url-accodeon').value = '';
     };
 
 }
@@ -147,11 +159,12 @@ function saveAccordeonItemData(e){
     const postAccordeonData = JSON.parse(post_accordionElement.value);
     const title = item.querySelector('.input-title');
     const content = item.querySelector('textarea');
+    const image = item.querySelector('.image-url-accodeon');
     const itemId = item.id;
     console.log(title.value, content.value, 'title, content');
-    if (title.value =='' || content.value =='') return false;
+    if (title.value =='') return false;
 
-    const newpostAccordeonData = postAccordeonData.push({id: itemId, title: title.value, content: content.value});
+    const newpostAccordeonData = postAccordeonData.push({id: itemId, title: title.value, content: content.value, image: image.value});
     console.log(postAccordeonData);
     post_accordionElement.value = JSON.stringify(postAccordeonData);
     return true
@@ -162,4 +175,9 @@ function saveAccordeonItem(e){
     const saved = saveAccordeonItemData(e);
     if (saved === false) return null;
     cloneElement(e.parentNode.parentNode.parentNode.parentNode);
+}
+
+
+function addBlockItem(e){
+    console.log(e);
 }

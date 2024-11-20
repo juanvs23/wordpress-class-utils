@@ -90,8 +90,10 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			global $typenow;
 			if ( in_array( $typenow, $this->config['post-type'] ) ) {
 				wp_enqueue_media();
+				wp_enqueue_editor();
 				wp_enqueue_script( 'wp-color-picker' );
 				wp_enqueue_style( 'wp-color-picker' );
+			//	wp_enqueue_script('tymece',ADDIC_CLINIC_PLUGIN_URL. 'classes/assets/libs/tinymce/tinymce.min.js',[],'1.0.0',true);
 			}
 		}
 	
@@ -99,7 +101,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			global $typenow;
 			if ( in_array( $typenow, $this->config['post-type'] ) ) {
 				?>
-				<script defer src="<?php echo get_stylesheet_directory_uri().'/classes/assets/js/media.js';?>"></script>
+				<script defer src="<?php echo ADDIC_CLINIC_PLUGIN_URL .'classes/assets/js/media.js';?>"></script>
 				<!-- <script  defer  src="<?php echo get_stylesheet_directory_uri().'/classes/assets/js/tailwind.js';?>"></script> -->
 	
 				<?php
@@ -339,6 +341,9 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					break;
 				case 'textarea':
 					$this->coltmanInputs->textarea( $field, $value );
+					break;
+				case 'repeater':
+					$this->coltmanInputs->repeater( $field, $value );
 					break;
 				default:
 				$this->coltmanInputs->input( $field, $value );
