@@ -90,9 +90,12 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			global $typenow;
 			if ( in_array( $typenow, $this->config['post-type'] ) ) {
 				wp_enqueue_media();
-				wp_enqueue_editor();
 				wp_enqueue_script( 'wp-color-picker' );
 				wp_enqueue_style( 'wp-color-picker' );
+				wp_register_style( 'select2css', '//cdnjs.cloudflare.com/ajax/libs/select2/3.4.8/select2.css', false, '1.0', 'all' );
+				wp_register_script( 'select2', '//cdnjs.cloudflare.com/ajax/libs/select2/3.4.8/select2.js', array( 'jquery' ), '1.0', true );
+				wp_enqueue_style( 'select2css' );
+				wp_enqueue_script( 'select2' );
 			//	wp_enqueue_script('tymece',ADDIC_CLINIC_PLUGIN_URL. 'classes/assets/libs/tinymce/tinymce.min.js',[],'1.0.0',true);
 			}
 		}
@@ -101,7 +104,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			global $typenow;
 			if ( in_array( $typenow, $this->config['post-type'] ) ) {
 				?>
-				<script defer src="<?php echo ADDIC_CLINIC_PLUGIN_URL .'classes/assets/js/media.js';?>"></script>
+				<script defer src="<?php echo get_stylesheet_directory_uri() .'/classes/assets/js/media.js';?>"></script>
 				<!-- <script  defer  src="<?php echo get_stylesheet_directory_uri().'/classes/assets/js/tailwind.js';?>"></script> -->
 	
 				<?php
@@ -233,8 +236,13 @@ if(!class_exists('ColtmanCreateMetabox')) {
 		}
 	
 		public function save_post( $post_id ) {
+			/* var_dump( $_POST );
+			die(); */
 			foreach ( $this->config['fields'] as $field ) {
 				switch ( $field['type'] ) {
+					case 'get_posts':
+						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) ? json_encode($_POST[ $field['id'] ]) : '[]' );
+						break;
 					case 'checkbox':
 						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) ? $_POST[ $field['id'] ] : '' );
 						break;
@@ -250,6 +258,11 @@ if(!class_exists('ColtmanCreateMetabox')) {
 							update_post_meta( $post_id, $field['id'], $sanitized );
 						}
 						break;
+					case 'textarea':
+						if ( isset( $_POST[ $field['id'] ] ) ) {
+							
+							update_post_meta( $post_id, $field['id'], $_POST[ $field['id'] ] );
+						}
 					default:
 						if ( isset( $_POST[ $field['id'] ] ) ) {
 							$sanitized = sanitize_text_field( $_POST[ $field['id'] ] );
@@ -321,6 +334,12 @@ if(!class_exists('ColtmanCreateMetabox')) {
 				case 'checkbox':
 					$this->coltmanInputs->checkbox( $field, $checked );
 					break;
+				case 'number':
+					$this->coltmanInputs->input_minmax( $field, $value );
+					break;
+				case 'get_terms':
+					$this->coltmanInputs->get_terms( $field, $value );
+					break;
 				case 'accordion':
 					$this->coltmanInputs->accordion( $field, $value );
 					break;
@@ -334,38 +353,27 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					$this->coltmanInputs->media( $field, $value );
 					break;
 				case 'gallery':
-					$this->coltmanInputs->gallery_input( $field );
+					$this->coltmanInputs->gallery_input( $field, $value );
 					break;
 				case 'select':
 					$this->coltmanInputs->select( $field, $value );
 					break;
 				case 'textarea':
+				
 					$this->coltmanInputs->textarea( $field, $value );
+					break;
+				case 'get_posts':
+					
+					$this->coltmanInputs->get_posts( $field, $value );
 					break;
 				case 'repeater':
 					$this->coltmanInputs->repeater( $field, $value );
 					break;
 				default:
-				$this->coltmanInputs->input( $field, $value );
+					$this->coltmanInputs->input( $field, $value );
 			}
 			
 		}
-	
-	
-		private function checkbox( $field ) {
-			printf(
-				'<label class="rwp-checkbox-label"><input %s id="%s" name="%s" type="checkbox"> %s</label>',
-				$this->checked( $field ),
-				$field['id'], $field['id'],
-				isset( $field['description'] ) ? $field['description'] : ''
-			);
-		}
-		
-
-	
-		
-
-
 		/**
 		 * Get the value of a field.
 		 */

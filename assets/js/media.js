@@ -31,6 +31,12 @@ jQuery.noConflict();
             }).open();
         });
     });
+  /*   $('.get_posts').select2({
+         placeholder: 'Select an option',
+         search: true,
+    }); */
+
+    
 })(jQuery);
 
 

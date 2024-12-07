@@ -47,6 +47,43 @@ if(!class_exists('ColtmanInputFields')){
             ] );
         }
 
+        public function get_posts ( $field, $value= '' ){
+            global $wpdb;
+            $post_type = $field['post_type'];
+            $get_posts = get_posts(array('post_type' => $post_type, 'post_status' => 'publish', 'posts_per_page' => -1));
+           // var_dump($value);
+            ?>
+                <select <?php echo count($get_posts)== 0 ? 'disabled' :'' ?>  multiple="multiple"  name="<?php echo $field['id'];?>[]" id="<?php echo $field['id'];?>"  class="block w-full get_posts regular-text min-h-10" >
+                    <?php if(count($get_posts)> 0): ?>
+                       
+                        <?php foreach($get_posts as $post): ?>
+                            <option value="<?php echo $post->ID;?>" <?php echo in_array($post->ID, json_decode($value)) ? 'selected' : '';?>><?php echo $post->post_title;?></option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <option value="">Don't have posts available </option>
+                    <?php endif; ?>
+                </select>
+            <?php
+        }
+
+
+        public function  get_terms( $field, $value= '' ){
+            $taxonomy = $field['taxonomy'];
+            $terms = get_terms( $taxonomy, ['hide_empty' => false] );
+            ?>
+            <select <?php echo count($terms)== 0 ? 'disabled' :'' ?> name="<?php echo $field['id'];?>" id="<?php echo $field['id'];?>"  class="block w-full regular-text min-h-10">
+            <?php if(count($terms)> 0): ?>
+                <option value="">Select a term</option>
+                <?php foreach($terms as $term): ?>
+                    <option value="<?php echo $term->term_id;?>" <?php echo $value == $term->term_id ? 'selected' : '';?>><?php echo $term->name;?></option>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <option value="">Don't have terms available </option>
+            <?php endif;?>
+            </select>
+            <?php    
+        }
+
        
     
         public function input( $field, $value = '' ) {
@@ -84,10 +121,11 @@ if(!class_exists('ColtmanInputFields')){
         public function textarea( $field, $value = '' ) {
            $placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : '';
             printf(
-                '<textarea class="block w-full regular-text min-h-10" id="%s" name="%s" rows="%d" placeholder="%s">%s</textarea>',
-                $field['id'], $field['id'],
+                '<textarea class="block w-full regular-text min-h-10"  rows="%d" placeholder="%s" id="%s" name="%s">%s</textarea>',
                 isset( $field['rows'] ) ? $field['rows'] : 5,
                 $placeholder,
+                $field['id'], 
+                $field['id'],
                 $value
             );
         }
@@ -207,6 +245,7 @@ if(!class_exists('ColtmanInputFields')){
     
         public function accordion($field, $value){
             $value = !is_null( $value ) && $value !='' ? json_decode($value) : [];
+            $have_image = !isset($field['add_image']) || $field['add_image'] !='false' ? true : false;
             ?>
             <div class="accordion flex flex-col gap-2 w-full">
                 <input type="hidden" class="accordion-data"  name="<?php echo $field['id']; ?>" id="<?php echo $field['id']; ?>" value='<?php echo json_encode($value); ?>'>
@@ -227,6 +266,7 @@ if(!class_exists('ColtmanInputFields')){
                             <div class=" w-10/12 accodeon-item-content gap-2 flex flex-col gap-2 ">
                                 <h3 style="margin-top:0;margin-bottom:0px"><?php echo $field['label']. ' item';?></h3>
                                 <?php 
+                                if($have_image):
                                 $this->media([
                                     'id' => $id_base.'_image',
                                     'type' => 'media',
@@ -235,6 +275,7 @@ if(!class_exists('ColtmanInputFields')){
                                     'return' => 'url',
                                     'default' => '',
                                 ], $image );
+                                endif;
                                 ?>
                                 <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $id_base.'-title'; ?>"  value="<?php echo $title; ?>"  placeholder="Title" >
                                 
@@ -274,7 +315,8 @@ if(!class_exists('ColtmanInputFields')){
                             class="accordion-item flex items-center justify-between gap-2 bg-slate-100 p-4">
                             <div class=" w-10/12 accodeon-item-content gap-2 flex flex-col gap-2 ">
                                 <h3 style="margin-top:0;margin-bottom:10px"><?php echo $field['label']. ' item';?></h3>
-                                <?php 
+                                <?php
+                                 if($have_image): 
                                 $this->media([
                                     'id' => $field_id.'_image',
                                     'type' => 'media',
@@ -283,6 +325,7 @@ if(!class_exists('ColtmanInputFields')){
                                     'return' => 'url',
                                     'default' => '',
                                 ], '' );
+                                endif;
                                 ?>
                                 <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $field_id.'-title'; ?>" name="title"  placeholder="Title" >
                                 <?php
@@ -313,7 +356,7 @@ if(!class_exists('ColtmanInputFields')){
                         </div>
                     <?php endif; ?>
                 </div>
-                <div class="accordion-button-conta">
+               <!--  <div class="accordion-button-conta">
                     <button type="button"
                         onclick="addAccordeonItem(this)" 
                         class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded cursor-pointer btn btn-primary add-image min-w-max hover:bg-blue-600">
@@ -322,7 +365,7 @@ if(!class_exists('ColtmanInputFields')){
                                 <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
                             </svg>
                     </button>
-                </div>
+                </div> -->
             <div>
             <?php
         }
