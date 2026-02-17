@@ -5,7 +5,6 @@
  * Register and manage custom term meta fields.
  * 
  * @package Coltman
- * @author Juan Carlos Avila
  * @param string $taxonomy
  * @param array $config [
  *    'taxonomy' => string,

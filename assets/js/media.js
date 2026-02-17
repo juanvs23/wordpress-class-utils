@@ -82,9 +82,9 @@ function cloneElement(parentElment){
         accordion_container = parentAccordeon.querySelector('.accordion-container'),
         accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
     const baseItem = accordion_items[0].cloneNode(true);
-    const  title = baseItem.querySelector('.input-title');
-    const content = baseItem.querySelector('textarea');
-    const image = baseItem.querySelector('.image-url-accodeon')
+    let  title = baseItem.querySelector('.input-title');
+    let content = baseItem.querySelector('textarea');
+    let image = baseItem.querySelector('.image-url-accodeon')
 
     let proced = true;
 
@@ -96,7 +96,22 @@ function cloneElement(parentElment){
     });
 
     if (proced === false) return null;
-    title.value = '';
+        if(image == null){
+        image={
+            value: ''
+        }
+    }   
+     if(title == null){
+        title={
+            value: ''
+        }
+    }
+    if(content == null){
+        content={
+            value: ''
+        }
+    }
+        title.value = '';
     content.value = '';
     image.value = ''; 
     const baseId = baseItem.dataset.id
@@ -158,22 +173,67 @@ function removeAccordeonItem(e){
 
 // save Accordeon Item data
 function saveAccordeonItemData(e){
-    const parenContainer = e.parentNode.parentNode.parentNode.parentNode;
-    const item = e.parentNode.parentNode;
-    console.log(item,'item');
-    const post_accordionElement = parenContainer.querySelector('input[type="hidden"]');
-    const postAccordeonData = JSON.parse(post_accordionElement.value);
-    const title = item.querySelector('.input-title');
-    const content = item.querySelector('textarea');
-    const image = item.querySelector('.image-url-accodeon');
-    const itemId = item.id;
-    console.log(title.value, content.value, 'title, content');
-    if (title.value =='') return false;
+  const parenContainer = e.parentNode.parentNode.parentNode.parentNode
+  const item = e.parentNode.parentNode
 
-    const newpostAccordeonData = postAccordeonData.push({id: itemId, title: title.value, content: content.value, image: image.value});
-    console.log(postAccordeonData);
-    post_accordionElement.value = JSON.stringify(postAccordeonData);
-    return true
+  const post_accordionElement = parenContainer.querySelector(
+    'input[type="hidden"]'
+  )
+  const postAccordeonData = JSON.parse(post_accordionElement.value)
+  let title = item.querySelector(".input-title")
+  let content = item.querySelector("textarea")
+  let image = item.querySelector(".image-url-accodeon")
+  const itemId = item.id
+
+  if (image == null) {
+    image = {
+      value: "",
+    }
+  }
+  if (title == null) {
+    title = {
+      value: "",
+    }
+  }
+  if (content == null) {
+    content = {
+      value: "",
+    }
+  }
+
+  if (title.value == "") return false
+
+  const isDuplicate = postAccordeonData.some(existingItem => {
+    return (
+      existingItem.id === itemId &&
+      existingItem.title === title.value &&
+      existingItem.content === content.value &&
+      existingItem.image === image.value
+    );
+  });
+
+    if (isDuplicate) {
+    return true;
+  } else {
+  const existingIndex = postAccordeonData.findIndex(existingItem => existingItem.id === itemId);
+        if (existingIndex  !== -1) {
+                  postAccordeonData[existingIndex ] = {
+                  id: itemId,
+                  title: title.value,
+                  content: content.value,
+                  image: image.value,
+                };
+          } else {
+                const newpostAccordeonData = postAccordeonData.push({
+                  id: itemId,
+                  title: title.value,
+                  content: content.value,
+                  image: image.value,
+                })
+          }
+  post_accordionElement.value = JSON.stringify(postAccordeonData)
+  return true
+  }
 }
 
 // save Accordeon Item

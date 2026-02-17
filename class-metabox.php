@@ -88,8 +88,11 @@ if(!class_exists('ColtmanCreateMetabox')) {
 	
 		public function admin_enqueue_scripts() {
 			global $typenow;
-			if ( in_array( $typenow, $this->config['post-type'] ) ) {
-				wp_enqueue_media();
+			global $post;
+			if ( in_array( $typenow, $this->config['post-type'] ) &&  !is_null($post)) {
+				wp_enqueue_media([
+					'post'=>$post->ID
+				]);
 				wp_enqueue_script( 'wp-color-picker' );
 				wp_enqueue_style( 'wp-color-picker' );
 				wp_register_style( 'select2css', '//cdnjs.cloudflare.com/ajax/libs/select2/3.4.8/select2.css', false, '1.0', 'all' );
@@ -265,7 +268,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 						}
 					default:
 						if ( isset( $_POST[ $field['id'] ] ) ) {
-							$sanitized = sanitize_text_field( $_POST[ $field['id'] ] );
+							$sanitized = $_POST[ $field['id'] ];
 							update_post_meta( $post_id, $field['id'], $sanitized );
 						}
 				}

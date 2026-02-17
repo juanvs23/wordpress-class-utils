@@ -51,7 +51,6 @@ if (!class_exists('ColtmanRegisterPost')) {
      * @return void
      * @since 1.0.0
      * @author Coltman
-     * @link https://github.com/juanvs23
      */
     class ColtmanRegisterPost 
     {

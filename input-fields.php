@@ -211,47 +211,68 @@ if(!class_exists('ColtmanInputFields')){
             <?php
         }
     
-        public function select( $field ) {
-    
+        public function select( $field, $value = '' ) {
+
             printf(
                 '<select id="%s" class="block w-full regular-text min-h-10" name="%s">%s</select>',
                 $field['id'], $field['id'],
-                $this->select_options( $field )
+                $this->select_options( $field, $value )
             );
         }
     
         private function select_selected(  bool $selected = false ) {
             if ( $selected ) {
-                return 'selected';
+                return ' selected="selected"';
             }
             return '';
         }
     
         private function select_options( $field, $value  = '' ) {
             $options = '';
-            foreach ( $field['options'] as $option ) {
-                if ( $value === $option['value'] ) {
-                    $option['selected'] = true;
+            if ( ! isset( $field['options'] ) || ! is_array( $field['options'] ) ) {
+                return $options;
+            }
+            foreach ( $field['options'] as $key => $option ) {
+                $opt_value = '';
+                $opt_label = '';
+                $opt_selected = false;
+
+                if ( is_array( $option ) ) {
+                    $opt_value = isset( $option['value'] ) ? $option['value'] : ( isset( $option[0] ) ? $option[0] : '' );
+                    $opt_label = isset( $option['label'] ) ? $option['label'] : $opt_value;
+                    $opt_selected = isset( $option['selected'] ) ? (bool) $option['selected'] : false;
+                } else {
+                    // support 'key' => 'label' or numeric => 'label'
+                    $opt_value = is_string( $key ) ? $key : $option;
+                    $opt_label = $option;
                 }
+
+                if ( $value !== '' && (string) $value === (string) $opt_value ) {
+                    $opt_selected = true;
+                }
+
                 $options .= sprintf(
                     '<option value="%s" %s>%s</option>',
-                    $option['value'],
-                    $this->select_selected(  $option['selected'] ),
-                    $option['label']
+                    esc_attr( $opt_value ),
+                    $this->select_selected( $opt_selected ),
+                    esc_html( $opt_label )
                 );
             }
             return $options;
         }
     
         public function accordion($field, $value){
-            $value = !is_null( $value ) && $value !='' ? json_decode($value) : [];
+        //  var_dump(gettype($value));
+            $value = isset( $value ) && $value !='' && is_iterable(json_decode($value)) ?  json_decode($value) : [];
             $have_image = !isset($field['add_image']) || $field['add_image'] !='false' ? true : false;
             ?>
             <div class="accordion flex flex-col gap-2 w-full">
+               
                 <input type="hidden" class="accordion-data"  name="<?php echo $field['id']; ?>" id="<?php echo $field['id']; ?>" value='<?php echo json_encode($value); ?>'>
                 <div class="flex flex-col gap-4 pb-3 accordion-container " >
                     <?php if(count($value)>0):?>
                         <?php foreach($value as $item):
+                        //  var_dump($item);
                             $id = $item->id;
                             $title = $item->title;
                             $content = $item->content;
@@ -277,11 +298,11 @@ if(!class_exists('ColtmanInputFields')){
                                 ], $image );
                                 endif;
                                 ?>
-                                <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $id_base.'-title'; ?>"  value="<?php echo $title; ?>"  placeholder="Title" >
+                                <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $id_base.'-title'; ?>"   value="<?php echo esc_attr($title); ?>"  placeholder="Title" >
                                 
                                 <?php
                                 
-                               echo '<textarea  id="'.$id_base.'-content" class="block w-full h-4 px-3 py-2 rounded input-content" name="content" placeholder="Content">'.$content.'</textarea>';
+                               echo '<textarea  id="'.$id_base.'-content" class="block w-full h-4 px-3 py-2 rounded input-content"  placeholder="Content">'.$content.'</textarea>';
                                 
                                 ?>
                             </div>
@@ -327,10 +348,10 @@ if(!class_exists('ColtmanInputFields')){
                                 ], '' );
                                 endif;
                                 ?>
-                                <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $field_id.'-title'; ?>" name="title"  placeholder="Title" >
+                                <input type="text" class="regular-text block w-full min-h-10  rounded input-title" id="<?php echo $field_id.'-title'; ?>"   placeholder="Title" >
                                 <?php
                                 
-                                echo '<textarea  id="'.$field_id.'-content" class="block w-full h-4 px-3 py-2 rounded input-content" name="content" placeholder="Content"></textarea>';
+                                echo '<textarea  id="'.$field_id.'-content" class="block w-full h-4 px-3 py-2 rounded input-content"  placeholder="Content"></textarea>';
                                 
                                 ?>
                             </div>
@@ -360,7 +381,7 @@ if(!class_exists('ColtmanInputFields')){
                     <button type="button"
                         onclick="addAccordeonItem(this)" 
                         class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded cursor-pointer btn btn-primary add-image min-w-max hover:bg-blue-600">
-                            <?php echo __( 'Add Row', 'luxerecovery' ); ?>
+                            <?php echo __( 'Add Row', 'udh' ); ?>
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-plus-lg" viewBox="0 0 16 16">
                                 <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
                             </svg>
