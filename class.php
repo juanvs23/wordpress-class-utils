@@ -8,4 +8,4 @@ require __DIR__ .'/class-taxonomy.php';
 require __DIR__ . '/class-metabox.php';
 require __DIR__ . '/class-termeta.php';
 require __DIR__ . '/utils/utils.php';
-
+require __DIR__ . '/class-usermetabox.php';

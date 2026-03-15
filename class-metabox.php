@@ -369,9 +369,9 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					
 					$this->coltmanInputs->get_posts( $field, $value );
 					break;
-				case 'repeater':
+				/* case 'repeater':
 					$this->coltmanInputs->repeater( $field, $value );
-					break;
+					break; */
 				default:
 					$this->coltmanInputs->input( $field, $value );
 			}
