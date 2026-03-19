@@ -40,6 +40,19 @@ jQuery.noConflict();
 })(jQuery);
 
 
+// Normaliza comillas simples/dobles a variantes tipográficas
+function normalizeQuotes(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/'/g, '\u2019').replace(/\"/g, '\u201D');
+}
+
+// Escapa caracteres para que el JSON sea legible en PHP
+function escapeForPhpJson(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\"/g, '\\"');
+}
+
+
 function removeiTem(e) {
     const parentGallery = e.parentNode.parentNode.parentNode;
     const inputGallery = parentGallery.querySelector('input.gallery-data');
@@ -132,19 +145,23 @@ function addAccordeonItem(e){
    const accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
    const post_accordion_data = parentAccordeon.querySelector('input[type="hidden"]').value;
    const post_accordionData = JSON.parse(post_accordion_data);
-   accordion_items.forEach((item,index) => {
-      const title = item.querySelector('.input-title').value;
-      const textarea = item.querySelector('textarea').value;
-      const image = item.querySelector('.image-url-accodeon').value;
-      console.log(image);
-      const post_accordion_id = item.id;
-      //if (title == '' && textarea == '') return null;
-      const itemData = {id: post_accordion_id, title: title, content: textarea, image: image};
-      if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
-         post_accordionData.push(itemData);
-         post_accordion.value = JSON.stringify(post_accordionData);
-      };
-   })
+  accordion_items.forEach((item,index) => {
+    const title = item.querySelector('.input-title').value;
+    const textarea = item.querySelector('textarea').value;
+    const image = item.querySelector('.image-url-accodeon').value;
+    console.log(image);
+    const post_accordion_id = item.id;
+    const titleNorm = normalizeQuotes(title);
+    const textareaNorm = normalizeQuotes(textarea);
+    const titleEsc = escapeForPhpJson(titleNorm);
+    const textareaEsc = escapeForPhpJson(textareaNorm);
+    //if (title == '' && textarea == '') return null;
+    const itemData = {id: post_accordion_id, title: titleEsc, content: textareaEsc, image: image};
+    if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
+      post_accordionData.push(itemData);
+      post_accordion.value = JSON.stringify(post_accordionData);
+    };
+  })
    cloneElement(parentAccordeon);
 }
 
@@ -203,12 +220,18 @@ function saveAccordeonItemData(e){
 
   if (title.value == "") return false
 
+  const titleNorm = normalizeQuotes(title.value);
+  const contentNorm = normalizeQuotes(content.value);
+  const titleEsc = escapeForPhpJson(titleNorm);
+  const contentEsc = escapeForPhpJson(contentNorm);
+  const imageVal = image && image.value ? image.value : '';
+
   const isDuplicate = postAccordeonData.some(existingItem => {
     return (
       existingItem.id === itemId &&
-      existingItem.title === title.value &&
-      existingItem.content === content.value &&
-      existingItem.image === image.value
+      existingItem.title === titleEsc &&
+      existingItem.content === contentEsc &&
+      existingItem.image === imageVal
     );
   });
 
@@ -219,16 +242,16 @@ function saveAccordeonItemData(e){
         if (existingIndex  !== -1) {
                   postAccordeonData[existingIndex ] = {
                   id: itemId,
-                  title: title.value,
-                  content: content.value,
-                  image: image.value,
+                  title: titleEsc,
+                  content: contentEsc,
+                  image: imageVal,
                 };
           } else {
-                const newpostAccordeonData = postAccordeonData.push({
+                postAccordeonData.push({
                   id: itemId,
-                  title: title.value,
-                  content: content.value,
-                  image: image.value,
+                  title: titleEsc,
+                  content: contentEsc,
+                  image: imageVal,
                 })
           }
   post_accordionElement.value = JSON.stringify(postAccordeonData)

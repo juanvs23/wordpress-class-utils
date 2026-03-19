@@ -264,6 +264,18 @@ if(!class_exists('ColtmanInputFields')){
         public function accordion($field, $value){
         //  var_dump(gettype($value));
             $value = isset( $value ) && $value !='' && is_iterable(json_decode($value)) ?  json_decode($value) : [];
+            // Escapar backslashes y comillas en title y content para que el JSON no se rompa al guardar
+            if ( is_iterable( $value ) && count( (array) $value ) > 0 ) {
+                foreach ( $value as $vi => $item ) {
+                    if ( isset( $item->title ) ) {
+                        $item->title = str_replace( array('\\', "'", '"'), array('\\\\', "\\'", '\\"'), $item->title );
+                    }
+                    if ( isset( $item->content ) ) {
+                        $item->content = str_replace( array('\\', "'", '"'), array('\\\\', "\\'", '\\"'), $item->content );
+                    }
+                    $value[$vi] = $item;
+                }
+            }
             $have_image = !isset($field['add_image']) || $field['add_image'] !='false' ? true : false;
             ?>
             <div class="accordion flex flex-col gap-2 w-full">
@@ -274,7 +286,7 @@ if(!class_exists('ColtmanInputFields')){
                         <?php foreach($value as $item):
                         //  var_dump($item);
                             $id = $item->id;
-                            $title = $item->title;
+                                $title = $item->title;
                             $content = $item->content;
                             $image = $item->image;
     
@@ -302,7 +314,7 @@ if(!class_exists('ColtmanInputFields')){
                                 
                                 <?php
                                 
-                               echo '<textarea  id="'.$id_base.'-content" class="block w-full h-4 px-3 py-2 rounded input-content"  placeholder="Content">'.$content.'</textarea>';
+                               echo '<textarea  id="'.$id_base.'-content" class="block w-full h-4 px-3 py-2 rounded input-content"  placeholder="Content">'.esc_textarea($content).'</textarea>';
                                 
                                 ?>
                             </div>
