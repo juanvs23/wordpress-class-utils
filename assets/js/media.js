@@ -74,6 +74,18 @@ function addiTemImage(e){
     galleryContainer.appendChild(galleryItemExample);
 }
 
+// Sanitize input to prevent breaking JSON with quotes
+function sanitizeForJSON(value) {
+    if (typeof value !== 'string') return value;
+    return value
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/&(?!(quot|#39|lt|gt|#amp);)/g, '&amp;');
+}
+
 // Copy Accordeon Item
 function cloneElement(parentElment){
    // console.log(parentElment);
@@ -133,15 +145,16 @@ function addAccordeonItem(e){
    const post_accordion_data = parentAccordeon.querySelector('input[type="hidden"]').value;
    const post_accordionData = JSON.parse(post_accordion_data);
    accordion_items.forEach((item,index) => {
-      const title = item.querySelector('.input-title').value;
-      const textarea = item.querySelector('textarea').value;
-      const image = item.querySelector('.image-url-accodeon').value;
+      const title = sanitizeForJSON(item.querySelector('.input-title').value);
+      const textarea = sanitizeForJSON(item.querySelector('textarea').value);
+      const image = sanitizeForJSON(item.querySelector('.image-url-accodeon').value);
       console.log(image);
       const post_accordion_id = item.id;
       //if (title == '' && textarea == '') return null;
       const itemData = {id: post_accordion_id, title: title, content: textarea, image: image};
       if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
          post_accordionData.push(itemData);
+
          post_accordion.value = JSON.stringify(post_accordionData);
       };
    })
@@ -189,16 +202,22 @@ function saveAccordeonItemData(e){
     image = {
       value: "",
     }
+  } else {
+    image.value = sanitizeForJSON(image.value);
   }
   if (title == null) {
     title = {
       value: "",
     }
+  } else {
+    title.value = sanitizeForJSON(title.value);
   }
   if (content == null) {
     content = {
       value: "",
     }
+  } else {
+    content.value = sanitizeForJSON(content.value);
   }
 
   if (title.value == "") return false
