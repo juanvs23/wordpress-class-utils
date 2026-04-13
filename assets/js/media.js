@@ -157,22 +157,6 @@ function addAccordeonItem(e){
    const accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
    const post_accordion_data = parentAccordeon.querySelector('input[type="hidden"]').value;
    const post_accordionData = JSON.parse(post_accordion_data);
-<<<<<<< HEAD
-   accordion_items.forEach((item,index) => {
-      const title = sanitizeForJSON(item.querySelector('.input-title').value);
-      const textarea = sanitizeForJSON(item.querySelector('textarea').value);
-      const image = sanitizeForJSON(item.querySelector('.image-url-accodeon').value);
-      console.log(image);
-      const post_accordion_id = item.id;
-      //if (title == '' && textarea == '') return null;
-      const itemData = {id: post_accordion_id, title: title, content: textarea, image: image};
-      if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
-         post_accordionData.push(itemData);
-
-         post_accordion.value = JSON.stringify(post_accordionData);
-      };
-   })
-=======
   accordion_items.forEach((item,index) => {
     const title = item.querySelector('.input-title').value;
     const textarea = item.querySelector('textarea').value;
@@ -190,7 +174,6 @@ function addAccordeonItem(e){
       post_accordion.value = JSON.stringify(post_accordionData);
     };
   })
->>>>>>> f2c9fece77095804350336d7c995ab908a775b1d
    cloneElement(parentAccordeon);
 }
 
