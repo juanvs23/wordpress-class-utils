@@ -1,0 +1,149 @@
+/* ── Coltman Framework — Admin Styles ──────────────────────────────────── */
+/* Utility classes shared by metabox and term-meta admin screens.          */
+
+.rwp-checkbox-label {
+    display: block;
+}
+.block {
+    display: block !important;
+}
+.w-full {
+    width: 100%;
+}
+.bg-slate-100 {
+    background-color: #e2e8f0;
+}
+.p-4 {
+    padding: 1rem;
+}
+.flex {
+    display: flex;
+    flex: 1;
+}
+.justify-center {
+    justify-content: center;
+}
+.justify-between {
+    justify-content: space-between;
+}
+.items-center {
+    align-items: center;
+}
+.pb-3 {
+    padding-bottom: 0.75rem;
+}
+.gap-2 {
+    gap: 0.5rem !important;
+}
+.gap-3 {
+    gap: 0.75rem !important;
+}
+.gap-4 {
+    gap: 1rem;
+}
+.flex-col {
+    flex-direction: column;
+}
+.duration-300 {
+    transition-duration: 300ms;
+}
+.text-white {
+    --tw-text-opacity: 1;
+    color: rgb(255 255 255 / var(--tw-text-opacity));
+}
+.py-2 {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+.px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+.bg-blue-500 {
+    --tw-bg-opacity: 1;
+    background-color: rgb(59 130 246 / var(--tw-bg-opacity));
+}
+.bg-red-500 {
+    --tw-bg-opacity: 1;
+    background-color: rgb(239 68 68 / var(--tw-bg-opacity));
+}
+.min-h-10 {
+    min-height: 2.5rem !important;
+}
+.rounded {
+    border-radius: 0.25rem;
+}
+.rounded-md {
+    border-radius: 0.375rem;
+}
+.border {
+    border-width: 1px;
+}
+.border-b {
+    border-bottom-width: 1px;
+}
+.text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+.border-gray-300 {
+    --tw-border-opacity: 1;
+    border-color: rgb(209 213 219 / var(--tw-border-opacity));
+}
+.border-blue-500 {
+    --tw-border-opacity: 1;
+    border-color: rgb(59 130 246 / var(--tw-border-opacity));
+}
+.cursor-pointer {
+    cursor: pointer;
+    appearance: none;
+    border: none;
+}
+.hover\:bg-blue-600:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(37 99 235 / var(--tw-bg-opacity));
+}
+.hover\:bg-red-600:hover {
+    --tw-bg-opacity: 1;
+    background-color: rgb(220 38 38 / var(--tw-bg-opacity));
+}
+.w-10\/12 {
+    width: 83.333333%;
+    min-width: 83.333333%;
+    max-width: 83.333333%;
+}
+.w-2\/12 {
+    width: 16.666667%;
+    min-width: 16.666667%;
+    max-width: 16.666667%;
+}
+
+/* ── WP Editor ──────────────────────────────────────────────────────────── */
+
+.wp-editor-container iframe {
+    max-height: 200px;
+}
+
+/* ── WYSIWYG (contenteditable) ──────────────────────────────────────────── */
+
+.coltman-wysiwyg { border: 1px solid #c3c4c7; border-radius: 4px; background: #fff; width: 100%; }
+.coltman-wysiwyg-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: 4px 8px; background: #f6f7f7; border-bottom: 1px solid #c3c4c7; }
+.coltman-wysiwyg-btn { padding: 2px 7px; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; font-size: 13px; line-height: 1.6; color: #1d2327; }
+.coltman-wysiwyg-btn:hover { background: #fff; border-color: #8c8f94; }
+.coltman-wysiwyg-sep { width: 1px; height: 18px; background: #c3c4c7; margin: 0 3px; flex-shrink: 0; }
+.coltman-wysiwyg-body { min-height: 100px; padding: 8px 12px; outline: none; font-size: 14px; line-height: 1.6; }
+.coltman-wysiwyg-body:focus { box-shadow: inset 0 0 0 1px #2271b1; }
+.coltman-wysiwyg-body p { margin: 0 0 0.5em; }
+.coltman-wysiwyg-body ul, .coltman-wysiwyg-body ol { margin: 0 0 0.5em 1.5em; }
+.coltman-wysiwyg-body a { color: #2271b1; text-decoration: underline; }
+
+/* ── Accordion ──────────────────────────────────────────────────────────── */
+
+.accordion-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 6px; color: #8c8f94; border-radius: 3px; }
+.accordion-drag-handle:hover { color: #1d2327; background: rgba(0,0,0,0.06); }
+.accordion-drag-handle:active { cursor: grabbing; }
+.accordion-sort-placeholder { background: #e5e7eb; border: 2px dashed #9ca3af; border-radius: 4px; min-height: 60px; }

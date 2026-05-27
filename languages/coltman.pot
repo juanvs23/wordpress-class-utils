@@ -1,0 +1,85 @@
+# Coltman Framework — Translation Template
+# Copyright (C) 2024 Juan Carlos Avila (coltmandev.dev)
+# This file is distributed under the same license as the Coltman Framework.
+#
+# Translators:
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Coltman Framework 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-22 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. input-fields.php — botón del media picker (campo media)
+#: input-fields.php:107
+msgid "Select this file"
+msgstr ""
+
+#. input-fields.php — título del modal del media picker (campo media)
+#: input-fields.php:108
+msgid "Choose a file"
+msgstr ""
+
+#. input-fields.php — texto del botón del media picker (campo media y gallery)
+#: input-fields.php:111
+msgid "Upload"
+msgstr ""
+
+#. input-fields.php — opción cuando no hay posts disponibles (campo get_posts)
+#: input-fields.php:63
+msgid "Don't have posts available"
+msgstr ""
+
+#. input-fields.php — opción placeholder del selector (campo get_terms)
+#: input-fields.php:76
+msgid "Select a term"
+msgstr ""
+
+#. input-fields.php — opción cuando no hay términos disponibles (campo get_terms)
+#: input-fields.php:81
+msgid "Don't have terms available"
+msgstr ""
+
+#. input-fields.php — botón para eliminar imagen de la galería
+#: input-fields.php:173 input-fields.php:193 input-fields.php:329 input-fields.php:378
+msgid "Remove"
+msgstr ""
+
+#. input-fields.php — botón para agregar imagen a la galería
+#: input-fields.php:203
+msgid "Add image"
+msgstr ""
+
+#. input-fields.php — botón para guardar ítem del acordeón
+#: input-fields.php:337 input-fields.php:386
+msgid "Save"
+msgstr ""
+
+#. input-fields.php — botón para agregar fila al acordeón (actualmente comentado)
+#: input-fields.php:396
+msgid "Add Row"
+msgstr ""
+
+#. class-termeta.php — botón del media picker en campos de término
+#: class-termeta.php:291
+msgid "Select this file"
+msgstr ""
+
+#. class-termeta.php — título del modal del media picker en campos de término
+#: class-termeta.php:293
+msgid "Choose an image"
+msgstr ""
+
+#. class-termeta.php — texto del botón del media picker en campos de término
+#: class-termeta.php:297
+msgid "Upload"
+msgstr ""

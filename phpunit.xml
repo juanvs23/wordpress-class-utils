@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="tests/bootstrap.php" colors="true" cacheDirectory=".phpunit.cache">
+  <testsuites>
+    <testsuite name="Coltman Framework">
+      <directory>tests/Unit</directory>
+    </testsuite>
+  </testsuites>
+  <source>
+    <include>
+      <file>input-fields.php</file>
+      <file>class-post-types.php</file>
+      <file>class-taxonomy.php</file>
+      <file>class-metabox.php</file>
+      <file>class-termeta.php</file>
+      <file>class-usermetabox.php</file>
+      <directory>utils</directory>
+    </include>
+  </source>
+</phpunit>

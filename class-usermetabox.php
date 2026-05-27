@@ -2,6 +2,25 @@
 
   if ( ! class_exists( 'ColtmanCreateUserMeta' ) ) {
 
+    /**
+     * Adds a custom fields section to the WordPress user profile admin pages.
+     *
+     * ```php
+     * new ColtmanCreateUserMeta([
+     *     'title'       => 'Información adicional',
+     *     'description' => 'Campos adicionales del perfil de usuario.',
+     *     'fields'      => [
+     *         ['label' => 'Empresa',    'id' => 'user_company', 'type' => 'text',     'default' => ''],
+     *         ['label' => 'Teléfono',   'id' => 'user_phone',   'type' => 'text',     'default' => ''],
+     *         ['label' => 'Newsletter', 'id' => 'newsletter',   'type' => 'checkbox'],
+     *         ['label' => 'Avatar',     'id' => 'user_avatar',  'type' => 'media',    'return' => 'url'],
+     *     ],
+     * ]);
+     * ```
+     *
+     * @package Coltman
+     * @since   1.0.0
+     */
     class ColtmanCreateUserMeta {
 
         private $config;
@@ -53,9 +72,7 @@
             wp_enqueue_style( 'select2css' );
             wp_enqueue_script( 'select2' );
 
-            // Si tu tema/plugin tiene scripts personalizados (por ejemplo, media.js para galerías)
-            // Puedes encolarlos aquí. Ajusta la ruta según tu implementación.
-            // wp_enqueue_script( 'user-meta-media', get_stylesheet_directory_uri() . '/classes/assets/js/media.js', [], '1.0', true );
+            wp_enqueue_script( 'coltman-media', COLTMAN_ASSETS_URL . '/js/media.js', [ 'jquery' ], '1.0', true );
         }
 
         /**

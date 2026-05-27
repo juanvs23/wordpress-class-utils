@@ -2,50 +2,64 @@
 if(!class_exists('ColtmanRegisterTaxonomy')){
 
 
-    /*
-      [
-                'plural_name' => __( 'Tipos de platillos', 'restaurant-tools' ),
-                'singular_name' => __( 'Tipo de platillo', 'restaurant-tools' ),
-                'item' => __( 'Tipo de platillo', 'restaurant-tools' ),
-                'text_domain' => 'restaurant-tools',
-                'hierarchical' => false,
-                'public' => true,
-                'show_ui' => true,
-                'show_admin_column' => true,
-                'show_in_nav_menus' => true,
-                'show_tagcloud' => true,
-                'show_in_rest' => true,
-                'rest_base' => 'menus',
-            ],
-            'coltman_restaurant_menu',// taxonomy
-            [
-                'local7_dish_foods' // post type
-            ],
-            [
-                'slug' => __( 'carta-de-platillos', 'restaurant-tools' ),
-                'with_front' => true,
-                'hierarchical' => true,
-            ]
-    */
+    /**
+     * Registers a custom taxonomy declaratively with auto-generated labels.
+     *
+     * ```php
+     * new ColtmanRegisterTaxonomy(
+     *     [
+     *         'plural_name'       => 'Tipos de joya',
+     *         'singular_name'     => 'Tipo de joya',
+     *         'item'              => 'Tipo de joya',
+     *         'text_domain'       => 'anillosdepedida',
+     *         'hierarchical'      => true,
+     *         'public'            => true,
+     *         'show_ui'           => true,
+     *         'show_admin_column' => true,
+     *         'show_in_nav_menus' => true,
+     *         'show_tagcloud'     => true,
+     *         'show_in_rest'      => true,
+     *         'rest_base'         => 'tipo-de-joyeria',
+     *     ],
+     *     'tipo_de_joyeria',
+     *     ['anillo_jewelry'],
+     *     false
+     * );
+     * ```
+     *
+     * @package Coltman
+     * @since   1.0.0
+     */
     class ColtmanRegisterTaxonomy{
-        
-        
-        private $labels;
-        private $taxonomy_name;
+
+        /** @var array<string, string> Translated label set for register_taxonomy(). */
+        private array $labels;
+        /** @var string Taxonomy slug. */
+        private string $taxonomy_name;
+        /** @var array|bool Rewrite config or false. */
         private array|bool $rewrite;
-        private $post_types;
-        private $args;
-        private $capabilities = [
+        /** @var string[] Post type slugs to associate this taxonomy with. */
+        private array $post_types;
+        /** @var array<string, mixed> Arguments for register_taxonomy(). */
+        private array $args;
+        /** @var array<string, string> Capability map. Defaults to manage_categories / edit_posts. */
+        private array $capabilities = [
             'manage_terms'  =>'manage_categories',
             'edit_terms'    => 'manage_categories',
             'delete_terms'  => 'manage_categories',
             'assign_terms'  => 'edit_posts'
         ];
 
+        /**
+         * @param array<string, mixed> $config        Taxonomy configuration (plural_name, singular_name, item, text_domain, hierarchical, …).
+         * @param string               $taxonomy_name Taxonomy slug.
+         * @param string[]             $post_types    Post type slugs to attach this taxonomy to.
+         * @param array|bool           $rewrite       Rewrite config or false to disable.
+         */
         public function __construct(
-            array $config, 
-            string $taxonomy_name, 
-            array $post_types = [], 
+            array $config,
+            string $taxonomy_name,
+            array $post_types = [],
             array|bool $rewrite = false)
             {
 
@@ -94,6 +108,11 @@ if(!class_exists('ColtmanRegisterTaxonomy')){
             add_action( 'init', [$this, 'register_new_taxonomy'] );
         }
 
+        /**
+         * 'init' hook callback — calls register_taxonomy() with the built args.
+         *
+         * @return void
+         */
         public function register_new_taxonomy(){
             register_taxonomy($this->taxonomy_name, $this->post_types, $this->args );
         }

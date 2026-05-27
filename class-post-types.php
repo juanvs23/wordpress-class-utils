@@ -3,71 +3,67 @@
 if (!class_exists('ColtmanRegisterPost')) {
 
     /**
-     * 
-     * Class ColtmanRegisterPost
-     * @param array $labelArgs [
-     *            'name' => __('Eventos de local 7', 'restaurant-tools'),
-     *           'item' => __('Evento', 'restaurant-tools'),
-     *           'domain' => 'restaurant-tools',
+     * Registers a Custom Post Type declaratively with auto-generated labels.
      *
-     *       ]
-     * @param string $post_name 'local7_events'
-     * @param array $args [
-     *    'description' => __('Lista de eventos', 'restaurant-tools'),
-     *    'hierarchical' => bool,
-     *    'public' => bool,
-     *        'show_ui' => bool,
-     *        'show_in_menu' => bool,
-     *        'show_in_nav_menus' => bool,
-     *        'show_in_admin_bar' => bool,
-     *        'menu_position' => int,
-     *        'menu_icon' => string,
-     *        'can_export' => bool,
-     *        'has_archive' => bool,
-     *        'exclude_from_search' => bool,
-     *        'capability_type' => string,
-     *        'publicly_queryable' => bool,
-     *        'show_in_rest' => bool,
-     *        'map_meta_cap' => bool,
-     *        'rest_base' => string,
-     * ]
-     * @param array $supports [
-     *    'thumbnail',
-     *    'editor',
-     *    'author',
-     *    'excerpt',
-     *    'custom-fields',
-     *    'revisions',
-     *    'title'
-     * ]
-     * @param array $taxonomies [
-     *    'taxonomy_names' // string
-     * ]
-     * @param array|bool $rewrite [
-     *    'slug' => 'slug',
-     *    'with_front' => bool,
-     *    'pages' => bool,
-     *    'feeds' => bool,] or false
-     * @return void
-     * @since 1.0.0
-     * @author Coltman
+     * ```php
+     * new ColtmanRegisterPost(
+     *     ['name' => 'Joyas', 'item' => 'Joya', 'domain' => 'anillosdepedida'],
+     *     'anillo_jewelry',
+     *     [
+     *         'description'         => '',
+     *         'hierarchical'        => true,
+     *         'public'              => true,
+     *         'show_ui'             => true,
+     *         'show_in_menu'        => true,
+     *         'show_in_admin_bar'   => true,
+     *         'show_in_nav_menus'   => true,
+     *         'menu_position'       => 5,
+     *         'menu_icon'           => 'dashicons-superhero-alt',
+     *         'can_export'          => true,
+     *         'has_archive'         => false,
+     *         'exclude_from_search' => false,
+     *         'publicly_queryable'  => true,
+     *         'capability_type'     => 'post',
+     *         'show_in_rest'        => false,
+     *         'map_meta_cap'        => true,
+     *         'rest_base'           => '',
+     *     ],
+     *     ['thumbnail', 'custom-fields', 'editor', 'revisions', 'title'],
+     *     ['tipo_de_joyeria'],
+     *     false
+     * );
+     * ```
+     *
+     * @package Coltman
+     * @since   1.0.0
      */
-    class ColtmanRegisterPost 
+    class ColtmanRegisterPost
     {
+        /** @var array<string, string> Translated label set passed to register_post_type(). */
         private array $labels = [];
 
+        /** @var array<string, mixed> Arguments array for register_post_type(). */
         private array $args = [];
 
+        /** @var string Post type slug. */
         private string $post_name = '';
 
 
-        public function __construct( 
-                array $labelArgs, 
-                string $post_name, 
-                array $args = [], 
-                array $supports = [], 
-                array $taxonomies = [], 
-                array|bool $rewrite = false ) 
+        /**
+         * @param array{name: string, item: string, domain: string} $labelArgs  Plural name, singular item label, and text domain.
+         * @param string       $post_name  Post type slug (e.g. 'anillo_jewelry').
+         * @param array<string, mixed> $args  Arguments passed to register_post_type() (public, show_ui, menu_position, …).
+         * @param string[]     $supports   Post-type feature support ('title', 'editor', 'thumbnail', …).
+         * @param string[]     $taxonomies Taxonomy slugs to associate on registration.
+         * @param array|bool   $rewrite    Rewrite config array or false to disable.
+         */
+        public function __construct(
+                array $labelArgs,
+                string $post_name,
+                array $args = [],
+                array $supports = [],
+                array $taxonomies = [],
+                array|bool $rewrite = false )
         {
 
                     $this->post_name = $post_name;
@@ -130,6 +126,11 @@ if (!class_exists('ColtmanRegisterPost')) {
                     add_action('init', [$this, 'register_new_post_type']);
         }
 
+        /**
+         * 'init' hook callback — calls register_post_type() with the built args.
+         *
+         * @return void
+         */
         public function register_new_post_type (){
            register_post_type($this->post_name, $this->args);
         }

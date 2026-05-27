@@ -1,0 +1,49 @@
+# Coltman Framework — Nederlands
+# Copyright (C) 2024 Juan Carlos Avila (coltmandev.dev)
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Coltman Framework 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-22 00:00+0000\n"
+"PO-Revision-Date: 2026-05-22 00:00+0000\n"
+"Last-Translator: Juan Carlos Avila <juancarlos@newmovementdigital.com>\n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Select this file"
+msgstr "Dit bestand selecteren"
+
+msgid "Choose a file"
+msgstr "Kies een bestand"
+
+msgid "Upload"
+msgstr "Uploaden"
+
+msgid "Don't have posts available"
+msgstr "Geen berichten beschikbaar"
+
+msgid "Select a term"
+msgstr "Selecteer een term"
+
+msgid "Don't have terms available"
+msgstr "Geen termen beschikbaar"
+
+msgid "Remove"
+msgstr "Verwijderen"
+
+msgid "Add image"
+msgstr "Afbeelding toevoegen"
+
+msgid "Save"
+msgstr "Opslaan"
+
+msgid "Add Row"
+msgstr "Rij toevoegen"
+
+msgid "Choose an image"
+msgstr "Kies een afbeelding"

@@ -1,10 +1,14 @@
 
+const COLTMAN_DEBUG = false;
+const coltmanLog = (...args) => COLTMAN_DEBUG && console.log(...args);
 
 jQuery.noConflict();
 
 (function($) {
-   
+
     $(document).ready(function($) {
+
+        // ── Media picker ──────────────────────────────────────────────────────
         $('body').on('click', '.rwp-media-toggle', function(e) {
             e.preventDefault();
             let button = $(this);
@@ -17,77 +21,63 @@ jQuery.noConflict();
                 multiple: true
             }).on('select', function() {
                 let attachment = rwpMediaUploader.state().get('selection').first().toJSON();
-                console.log(attachment);
+                coltmanLog(attachment);
                 button.prev().val(attachment[button.data('return')]);
                 if(e.currentTarget.parentNode.classList.contains('get-image')){
-                    const imageItem = e.currentTarget.parentNode
-                    const gallery = imageItem.parentNode.parentNode.parentNode
+                    const imageItem = e.currentTarget.parentNode;
+                    const gallery = imageItem.parentNode.parentNode.parentNode;
                     const inputGallery = gallery.querySelector('input.gallery-data');
                     const inputItem = imageItem.querySelector('.image-url');
-                    const dataItem = imageItem.parentNode.dataset.item
-                    let imageGallery = JSON.parse(inputGallery.value)
-                    inputGallery.value = JSON.stringify([...imageGallery,{id: attachment.id, alt: attachment.alt,sizes: attachment.sizes,title: attachment.title,mime: attachment.mime, height: attachment.height, width: attachment.width, item: dataItem, url: inputItem.value}]);
+                    const dataItem = imageItem.parentNode.dataset.item;
+                    let imageGallery = JSON.parse(inputGallery.value);
+                    inputGallery.value = JSON.stringify([...imageGallery,{id: attachment.id, alt: attachment.alt, sizes: attachment.sizes, title: attachment.title, mime: attachment.mime, height: attachment.height, width: attachment.width, item: dataItem, url: inputItem.value}]);
                 }
             }).open();
         });
-    });
-  /*   $('.get_posts').select2({
-         placeholder: 'Select an option',
-         search: true,
-    }); */
 
-    
+        // ── Accordion sortable ────────────────────────────────────────────────
+        if (typeof $.fn.sortable === 'function') {
+            $('.accordion-container').sortable({
+                handle:      '.accordion-drag-handle',
+                axis:        'y',
+                cursor:      'grabbing',
+                tolerance:   'pointer',
+                placeholder: 'accordion-sort-placeholder',
+                forcePlaceholderSize: true,
+            });
+        }
+
+        // ── Select2 init (inside document.ready so DOM is available) ─────────
+        if (typeof $.fn.select2 === 'function') {
+            $('.js-select2').each(function() {
+                var config = {
+                    placeholder: $(this).data('placeholder') || '',
+                    width: '100%',
+                };
+                if ($(this).data('allow-clear')) {
+                    config.allowClear = true;
+                }
+                $(this).select2(config);
+            });
+        }
+
+    });
+
 })(jQuery);
 
 
-// Normaliza comillas simples/dobles a variantes tipográficas
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function normalizeQuotes(str) {
   if (typeof str !== 'string') return str;
-  return str.replace(/'/g, '\u2019').replace(/\"/g, '\u201D');
+  return str.replace(/'/g, '’').replace(/"/g, '“');
 }
 
-// Escapa caracteres para que el JSON sea legible en PHP
 function escapeForPhpJson(str) {
   if (typeof str !== 'string') return str;
-  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\"/g, '\\"');
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-
-function removeiTem(e) {
-    const parentGallery = e.parentNode.parentNode.parentNode;
-    const inputGallery = parentGallery.querySelector('input.gallery-data');
-    const container = e.parentNode.parentNode;
-    const item = e.parentNode;
-    const dataItem = item.dataset.item
-    const inputItem = item.querySelector('.image-url');
-
-    if (container.children.length > 1) {
-        console.log('more');
-        const imageGallery = JSON.parse(inputGallery.value);
-        inputGallery.value = JSON.stringify(imageGallery.filter((image) => image.item != dataItem));
-        item.remove();
-    }else{
-        console.log('less');
-        inputItem.value = '';
-        inputGallery.value = JSON.stringify([]);
-    }
-}
-
-function addiTemImage(e){
-    const gallery = e.parentNode;
-    const galleryContainer = gallery.querySelector('.gallery-container');
-    const galleryItems = gallery.querySelectorAll('.gallery-item');
-    const imageCount = galleryItems.length;
-    const galleryItemExample = galleryItems[0].cloneNode(true);
-    const uniqueId = Date.now().toString() + Math.floor(Math.random() * 10000);
-    galleryItemExample.dataset.item = uniqueId;
-
-    galleryItemExample.querySelector('.image-url').value = '';
-    
-    galleryContainer.appendChild(galleryItemExample);
-}
-
-// Sanitize input to prevent breaking JSON with quotes
 function sanitizeForJSON(value) {
     if (typeof value !== 'string') return value;
     return value
@@ -99,186 +89,247 @@ function sanitizeForJSON(value) {
         .replace(/&(?!(quot|#39|lt|gt|#amp);)/g, '&amp;');
 }
 
-// Copy Accordeon Item
-function cloneElement(parentElment){
-   // console.log(parentElment);
-    const parentAccordeon = parentElment,
-        post_accordion = parentAccordeon.querySelector('input[type="hidden"]')
-        accordion_container = parentAccordeon.querySelector('.accordion-container'),
-        accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
-    const baseItem = accordion_items[0].cloneNode(true);
-    let  title = baseItem.querySelector('.input-title');
-    let content = baseItem.querySelector('textarea');
-    let image = baseItem.querySelector('.image-url-accodeon')
 
-    let proced = true;
+// ── WYSIWYG (contenteditable) ─────────────────────────────────────────────────
 
-    accordion_items.forEach((item) => {
-       if (item.querySelector('.input-title').value == '' && item.querySelector('textarea').value == '' && image.value == '') {
-        console.log('object');
-        proced = false;
-       }
+// Copies contenteditable innerHTML to the associated hidden textarea
+function syncWysiwyg(body) {
+    const id = body.dataset.sync;
+    if (!id) return;
+    const textarea = document.getElementById(id);
+    if (textarea) textarea.value = body.innerHTML;
+}
+
+// Toolbar button clicks — delegated on document so cloned items work immediately
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.coltman-wysiwyg-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const cmd     = btn.dataset.cmd;
+    const wysiwyg = btn.closest('.coltman-wysiwyg');
+    const body    = wysiwyg ? wysiwyg.querySelector('.coltman-wysiwyg-body') : null;
+    if (!body) return;
+    body.focus();
+    if (cmd === 'createLink') {
+        const url = window.prompt(btn.title || 'URL:');
+        if (!url) return;
+        document.execCommand('createLink', false, url);
+    } else {
+        document.execCommand(cmd, false, null);
+    }
+    syncWysiwyg(body);
+});
+
+// Auto-sync on every keystroke / paste
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('coltman-wysiwyg-body')) {
+        syncWysiwyg(e.target);
+    }
+});
+
+// Auto-sync on blur (blur doesn't bubble, so use capture phase)
+document.addEventListener('blur', function(e) {
+    if (e.target.classList.contains('coltman-wysiwyg-body')) {
+        syncWysiwyg(e.target);
+    }
+}, true);
+
+// On form submit: sync all wysiwyg bodies, then rebuild every accordion's hidden JSON
+// from the current DOM so unsaved rows are always included.
+document.addEventListener('submit', function() {
+    document.querySelectorAll('.coltman-wysiwyg-body').forEach(syncWysiwyg);
+
+    document.querySelectorAll('.accordion').forEach(function(accordion) {
+        const hiddenInput = accordion.querySelector('input[type="hidden"]');
+        if (!hiddenInput) return;
+        const data = [];
+        accordion.querySelectorAll('.accordion-item').forEach(function(item) {
+            const titleEl   = item.querySelector('.input-title');
+            const contentEl = item.querySelector('.input-content');
+            const imageEl   = item.querySelector('.image-url-accodeon');
+            const title     = titleEl ? titleEl.value.trim() : '';
+            if (!title) return;
+            data.push({
+                id:      item.id,
+                title:   title,
+                content: contentEl ? contentEl.value : '',
+                image:   imageEl   ? imageEl.value   : '',
+            });
+        });
+        hiddenInput.value = JSON.stringify(data);
     });
+});
 
-    if (proced === false) return null;
-        if(image == null){
-        image={
-            value: ''
-        }
-    }   
-     if(title == null){
-        title={
-            value: ''
-        }
-    }
-    if(content == null){
-        content={
-            value: ''
-        }
-    }
-        title.value = '';
-    content.value = '';
-    image.value = ''; 
-    const baseId = baseItem.dataset.id
-    const post_accordion_id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+"_parent";
-    baseItem.id = post_accordion_id;
-   /*  baseItem.querySelector('texarea').id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+'-content'; */
-    console.log(content.id);
-    content.id = baseId +'_'+ (Math.floor(Math.random() * (10000 - 1000) + 1000)).toLocaleString()+'-content';
-    accordion_container.appendChild(baseItem );
 
-  
+// ── Gallery ───────────────────────────────────────────────────────────────────
+
+function removeiTem(e) {
+    const parentGallery = e.parentNode.parentNode.parentNode;
+    const inputGallery = parentGallery.querySelector('input.gallery-data');
+    const container = e.parentNode.parentNode;
+    const item = e.parentNode;
+    const dataItem = item.dataset.item;
+    const inputItem = item.querySelector('.image-url');
+
+    if (container.children.length > 1) {
+        coltmanLog('more');
+        const imageGallery = JSON.parse(inputGallery.value);
+        inputGallery.value = JSON.stringify(imageGallery.filter((image) => image.item != dataItem));
+        item.remove();
+    } else {
+        coltmanLog('less');
+        inputItem.value = '';
+        inputGallery.value = JSON.stringify([]);
+    }
 }
 
-// add Accordeon Item
-function addAccordeonItem(e){
-   const parentAccordeon = e.parentNode.parentNode;
-   const post_accordion = parentAccordeon.querySelector('input[type="hidden"]')
-   const accordion_items = parentAccordeon.querySelectorAll('.accordion-item');
-   const post_accordion_data = parentAccordeon.querySelector('input[type="hidden"]').value;
-   const post_accordionData = JSON.parse(post_accordion_data);
-  accordion_items.forEach((item,index) => {
-    const title = item.querySelector('.input-title').value;
-    const textarea = item.querySelector('textarea').value;
-    const image = item.querySelector('.image-url-accodeon').value;
-    console.log(image);
-    const post_accordion_id = item.id;
-    const titleNorm = normalizeQuotes(title);
-    const textareaNorm = normalizeQuotes(textarea);
-    const titleEsc = escapeForPhpJson(titleNorm);
-    const textareaEsc = escapeForPhpJson(textareaNorm);
-    //if (title == '' && textarea == '') return null;
-    const itemData = {id: post_accordion_id, title: titleEsc, content: textareaEsc, image: image};
-    if(post_accordionData.find((post_accordion_item) => post_accordion_item.id === post_accordion_id)===undefined && title !== '') {
-      post_accordionData.push(itemData);
-      post_accordion.value = JSON.stringify(post_accordionData);
-    };
-  })
-   cloneElement(parentAccordeon);
+function addiTemImage(e){
+    const gallery = e.parentNode;
+    const galleryContainer = gallery.querySelector('.gallery-container');
+    const galleryItems = gallery.querySelectorAll('.gallery-item');
+    const galleryItemExample = galleryItems[0].cloneNode(true);
+    const uniqueId = Date.now().toString() + Math.floor(Math.random() * 10000);
+    galleryItemExample.dataset.item = uniqueId;
+    galleryItemExample.querySelector('.image-url').value = '';
+    galleryContainer.appendChild(galleryItemExample);
 }
 
 
-// remove Accordeon Item
-function removeAccordeonItem(e){
+// ── Accordion ─────────────────────────────────────────────────────────────────
 
-    const item = e.parentNode.parentNode;
+// Clones the first accordion item as a new empty item.
+// The contenteditable approach means no TinyMCE reinit — just update data attributes and IDs.
+function cloneElement(parentElment) {
+    const parentAccordeon   = parentElment,
+        accordion_container = parentAccordeon.querySelector('.accordion-container'),
+        accordion_items     = parentAccordeon.querySelectorAll('.accordion-item');
+
+    // Block clone when every visible item is still empty
+    let proceed = true;
+    accordion_items.forEach(function(item) {
+        const itemTitle   = item.querySelector('.input-title');
+        const itemContent = item.querySelector('.input-content');
+        const itemImage   = item.querySelector('.image-url-accodeon');
+        if (
+            (itemTitle   ? itemTitle.value.trim()   : '') === '' &&
+            (itemContent ? itemContent.value.trim() : '') === '' &&
+            (itemImage   ? itemImage.value.trim()   : '') === ''
+        ) {
+            proceed = false;
+        }
+    });
+    if (!proceed) return null;
+
+    const baseItem = accordion_items[0].cloneNode(true);
+    const baseId   = baseItem.dataset.id;
+
+    const rand         = Math.floor(Math.random() * (10000 - 1000) + 1000);
+    const newItemId    = baseId + '_' + rand + '_parent';
+    const newContentId = baseId + '_' + rand + '_content';
+    baseItem.id = newItemId;
+
+    // Clear title and image
+    const titleEl = baseItem.querySelector('.input-title');
+    if (titleEl) titleEl.value = '';
+    const imageEl = baseItem.querySelector('.image-url-accodeon');
+    if (imageEl) imageEl.value = '';
+
+    // Update contenteditable wysiwyg: clear content, rewire sync target
+    const wysiwygWrap = baseItem.querySelector('.coltman-wysiwyg');
+    if (wysiwygWrap) wysiwygWrap.dataset.for = newContentId;
+    const wysiwygBody = baseItem.querySelector('.coltman-wysiwyg-body');
+    if (wysiwygBody) {
+        wysiwygBody.innerHTML    = '';
+        wysiwygBody.dataset.sync = newContentId;
+    }
+
+    // Update hidden textarea id/name
+    const contentTextarea = baseItem.querySelector('.input-content');
+    if (contentTextarea) {
+        contentTextarea.id    = newContentId;
+        contentTextarea.name  = newContentId;
+        contentTextarea.value = '';
+    }
+
+    coltmanLog('cloneElement newItemId:', newItemId, 'newContentId:', newContentId);
+    accordion_container.appendChild(baseItem);
+}
+
+// "Add Row" button handler
+function addAccordeonItem(e) {
+    cloneElement(e.parentNode.parentNode);
+}
+
+// Removes an accordion item (or clears it if it's the only one)
+function removeAccordeonItem(e) {
+    const item       = e.parentNode.parentNode;
     const parentItem = item.parentNode;
     const post_accordionElement = parentItem.parentNode.querySelector('input[type="hidden"]');
-    const itemId = item.id;
+    const itemId     = item.id;
+
     const postAccordeonData = JSON.parse(post_accordionElement.value);
-    const newpostAccordeonData = postAccordeonData.filter((item) => item.id != itemId);
-    post_accordionElement.value = JSON.stringify(newpostAccordeonData);
+    post_accordionElement.value = JSON.stringify(postAccordeonData.filter((i) => i.id != itemId));
 
-    console.log(post_accordionElement, 'post_accordionElement');
-    if(parentItem.children.length>1){
+    if (parentItem.children.length > 1) {
         item.remove();
-    }else{
-        item.querySelector('.input-title').value = '';
-        item.querySelector('textarea').value = '';
-        item.querySelector('.image-url-accodeon').value = '';
-    };
-
+    } else {
+        const titleEl     = item.querySelector('.input-title');
+        const imageEl     = item.querySelector('.image-url-accodeon');
+        const contentEl   = item.querySelector('.input-content');
+        const wysiwygBody = item.querySelector('.coltman-wysiwyg-body');
+        if (titleEl)     titleEl.value     = '';
+        if (imageEl)     imageEl.value     = '';
+        if (contentEl)   contentEl.value   = '';
+        if (wysiwygBody) wysiwygBody.innerHTML = '';
+    }
 }
 
-// save Accordeon Item data
-function saveAccordeonItemData(e){
-  const parenContainer = e.parentNode.parentNode.parentNode.parentNode
-  const item = e.parentNode.parentNode
+// Saves the current accordion item to the field's hidden JSON (manual save)
+function saveAccordeonItemData(e) {
+    const parenContainer        = e.parentNode.parentNode.parentNode.parentNode;
+    const item                  = e.parentNode.parentNode;
+    const post_accordionElement = parenContainer.querySelector('input[type="hidden"]');
+    const postAccordeonData     = JSON.parse(post_accordionElement.value);
 
-  const post_accordionElement = parenContainer.querySelector(
-    'input[type="hidden"]'
-  )
-  const postAccordeonData = JSON.parse(post_accordionElement.value)
-  let title = item.querySelector(".input-title")
-  let content = item.querySelector("textarea")
-  let image = item.querySelector(".image-url-accodeon")
-  const itemId = item.id
+    const titleEl     = item.querySelector('.input-title');
+    const contentEl   = item.querySelector('.input-content');
+    const imageEl     = item.querySelector('.image-url-accodeon');
+    const wysiwygBody = item.querySelector('.coltman-wysiwyg-body');
+    const itemId      = item.id;
 
-  if (image == null) {
-    image = {
-      value: "",
-    }
-  } else {
-    image.value = sanitizeForJSON(image.value);
-  }
-  if (title == null) {
-    title = {
-      value: "",
-    }
-  } else {
-    title.value = sanitizeForJSON(title.value);
-  }
-  if (content == null) {
-    content = {
-      value: "",
-    }
-  } else {
-    content.value = sanitizeForJSON(content.value);
-  }
+    const titleValue = titleEl ? titleEl.value.trim() : '';
+    if (!titleValue) return false;
 
-  if (title.value == "") return false
+    // Ensure wysiwyg is synced before reading the textarea
+    if (wysiwygBody) syncWysiwyg(wysiwygBody);
 
-  const titleNorm = normalizeQuotes(title.value);
-  const contentNorm = normalizeQuotes(content.value);
-  const titleEsc = escapeForPhpJson(titleNorm);
-  const contentEsc = escapeForPhpJson(contentNorm);
-  const imageVal = image && image.value ? image.value : '';
+    const contentValue = contentEl ? contentEl.value : '';
+    const imageVal     = imageEl   ? imageEl.value   : '';
 
-  const isDuplicate = postAccordeonData.some(existingItem => {
-    return (
-      existingItem.id === itemId &&
-      existingItem.title === titleEsc &&
-      existingItem.content === contentEsc &&
-      existingItem.image === imageVal
+    const isDuplicate = postAccordeonData.some((i) =>
+        i.id      === itemId       &&
+        i.title   === titleValue   &&
+        i.content === contentValue &&
+        i.image   === imageVal
     );
-  });
+    if (isDuplicate) return true;
 
-    if (isDuplicate) {
+    const existingIndex = postAccordeonData.findIndex((i) => i.id === itemId);
+    const newData = { id: itemId, title: titleValue, content: contentValue, image: imageVal };
+
+    if (existingIndex !== -1) {
+        postAccordeonData[existingIndex] = newData;
+    } else {
+        postAccordeonData.push(newData);
+    }
+
+    post_accordionElement.value = JSON.stringify(postAccordeonData);
     return true;
-  } else {
-  const existingIndex = postAccordeonData.findIndex(existingItem => existingItem.id === itemId);
-        if (existingIndex  !== -1) {
-                  postAccordeonData[existingIndex ] = {
-                  id: itemId,
-                  title: titleEsc,
-                  content: contentEsc,
-                  image: imageVal,
-                };
-          } else {
-                postAccordeonData.push({
-                  id: itemId,
-                  title: titleEsc,
-                  content: contentEsc,
-                  image: imageVal,
-                })
-          }
-  post_accordionElement.value = JSON.stringify(postAccordeonData)
-  return true
-  }
 }
 
-// save Accordeon Item
-function saveAccordeonItem(e){
+
+// Saves the current item and adds a new empty row (combined Save+Clone flow)
+function saveAccordeonItem(e) {
     const saved = saveAccordeonItemData(e);
     if (saved === false) return null;
     cloneElement(e.parentNode.parentNode.parentNode.parentNode);
@@ -286,5 +337,5 @@ function saveAccordeonItem(e){
 
 
 function addBlockItem(e){
-    console.log(e);
+    coltmanLog(e);
 }

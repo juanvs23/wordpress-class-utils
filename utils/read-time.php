@@ -5,13 +5,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Calcula el tiempo de lectura estimado de un post basado en su contenido.
+ * Calculates the estimated reading time of a post.
  *
- * @param int|WP_Post|null $post ID del post o el objeto WP_Post. Si es null, toma el post global actual.
- * @param int $wpm Palabras leídas por minuto. Por defecto 200 (velocidad promedio).
- * @param string $single_suffix Sufijo para el tiempo de lectura en singular. Por defecto 'min'.
- * @param string $plural_suffix Sufijo para el tiempo de lectura en plural. Por defecto 'mins'.
- * @return object Objeto con las propiedades 'time' (minutos estimados) y 'suffix' (sufijo correspondiente).
+ * @param array{
+ *     post?:          int|WP_Post|null,
+ *     wpm?:           int,
+ *     single_suffix?: string,
+ *     plural_suffix?: string
+ * } $args {
+ *     @type int|WP_Post|null $post          Post ID, WP_Post object, or null for the global post.
+ *     @type int              $wpm           Words per minute. Default 200.
+ *     @type string           $single_suffix Suffix for singular reading time. Default 'min'.
+ *     @type string           $plural_suffix Suffix for plural reading time. Default 'mins'.
+ * }
+ * @return object{time: int, suffix: string} Object with 'time' (minutes, min. 1) and 'suffix'.
  */
 function get_estimated_reading_time( $args ) {
     // Obtener el objeto del Post
@@ -39,10 +46,10 @@ function get_estimated_reading_time( $args ) {
     $word_count = str_word_count( $content );
 
     // Calcular el tiempo (Dividiendo las palabras entre palabras por minuto)
-    $reading_time = ceil( $word_count / $wpm );
+    $reading_time = (int) ceil( $word_count / $wpm );
 
     if ( $reading_time < 1 ) {
-        $reading_time = 1; // Asegurar que el tiempo mínimo sea 1 minuto
+        $reading_time = 1;
     }
     
     $suffix = $reading_time === 1 ? $single_sufix : $plural_sufix;

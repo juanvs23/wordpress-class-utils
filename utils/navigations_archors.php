@@ -75,8 +75,10 @@ global $rc_global_headings;
 $rc_global_headings = [];
 
 /**
- * Filtramos the_content para aplicar el procesador.
- * Además, guardamos los headings detectados en nuestra variable global.
+ * 'the_content' filter callback (priority 15) — injects IDs into headings and updates $rc_global_headings.
+ *
+ * @param string $content Post content HTML.
+ * @return string Modified HTML with id attributes on h1–h6 elements.
  */
 function filter_content_inject_headings( $content ) {
     global $rc_global_headings;
@@ -93,8 +95,12 @@ function filter_content_inject_headings( $content ) {
 add_filter( 'the_content', 'filter_content_inject_headings', 15 ); // Prioridad 15 para intentar atrapar shortcodes procesados
 
 /**
- * Función pública para obtener el listado de headings desde la plantilla (por ej., para la tabla de contenidos).
- * Importante: Debe llamarse _DESPUÉS_ de the_content() o de consultar el post.
+ * Returns the headings array for the current post, for use in table-of-contents templates.
+ *
+ * Must be called AFTER the_content() so that the global $rc_global_headings is populated.
+ * Falls back to processing get_the_content() directly if called before the_content().
+ *
+ * @return array<int, object{id: string, text: string}> Array of heading objects.
  */
 function get_extracted_headings_array() {
     global $rc_global_headings;
