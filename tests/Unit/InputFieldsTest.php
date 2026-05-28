@@ -465,6 +465,34 @@ class InputFieldsTest extends TestCase
         $this->assertStringContainsString('gallery-item', $html);
     }
 
+    // ── list_input() ─────────────────────────────────────────────────────────
+
+    public function test_list_input_outputs_list_wrapper(): void
+    {
+        $html = $this->capture(fn() => $this->f->list_input(['id' => 'list'], ''));
+        $this->assertStringContainsString('coltman-list', $html);
+        $this->assertStringContainsString('class="list-data"', $html);
+    }
+
+    public function test_list_input_includes_add_item_button(): void
+    {
+        $html = $this->capture(fn() => $this->f->list_input(['id' => 'list'], ''));
+        $this->assertStringContainsString('Add item', $html);
+    }
+
+    public function test_list_input_renders_existing_items(): void
+    {
+        $value = json_encode([
+            (object)['item' => 'item_1', 'text' => 'First item'],
+            (object)['item' => 'item_2', 'text' => 'Second item'],
+        ]);
+
+        $html = $this->capture(fn() => $this->f->list_input(['id' => 'list'], $value));
+        $this->assertStringContainsString('First item', $html);
+        $this->assertStringContainsString('Second item', $html);
+        $this->assertStringContainsString('list-item', $html);
+    }
+
     // ── color() ──────────────────────────────────────────────────────────────
 
     public function test_color_renders_text_input_with_picker_class(): void

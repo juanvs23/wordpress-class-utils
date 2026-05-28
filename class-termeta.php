@@ -216,6 +216,9 @@ if (!class_exists('ColtmanTermMeta')) {
                 case 'gallery':
                     $this->coltmanInputs->gallery_input( $field, $field_value );
                     break;
+                case 'list':
+                    $this->coltmanInputs->list_input( $field, $field_value );
+                    break;
                 case 'editor':
                     $this->coltmanInputs->editor( $field, $field_value );
                     break;
@@ -346,6 +349,7 @@ if (!class_exists('ColtmanTermMeta')) {
                         break;
                     case 'gallery':
                     case 'accordion':
+                    case 'list':
                         $sanitized = $_POST[ $field_id ];
                         break;
                     case 'color':

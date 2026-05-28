@@ -1,6 +1,6 @@
 # Framework Coltman — Guía completa
 
-> **Versión 1.13.0** — Reemplaza ACF sin dependencias externas ni licencias Pro.
+> **Versión 1.14.0** — Reemplaza ACF sin dependencias externas ni licencias Pro.
 
 Módulo PHP reutilizable para WordPress que registra Custom Post Types, taxonomías, metaboxes con campos personalizados, meta de términos y meta de usuario. Se distribuye como sub-repositorio git independiente — copia la carpeta `classes/` y funciona.
 
@@ -26,7 +26,7 @@ Módulo PHP reutilizable para WordPress que registra Custom Post Types, taxonom�
 4. [ColtmanCreateMetabox — Metaboxes](#4-coltmancreatemetabox--metaboxes)
 5. [Tipos de campo](#5-tipos-de-campo)
    - [text](#text--texto-simple), [textarea](#textarea--área-de-texto-html), [number](#number--número), [date](#date--fecha), [email](#email--correo), [url](#url), [color](#color--selector-de-color), [checkbox](#checkbox--casilla), [select](#select--lista-desplegable)
-   - [editor](#editor--wysiwyg-tinymce), [media](#media--selector-de-archivoimagen), [gallery](#gallery--galería-de-imágenes)
+    - [editor](#editor--wysiwyg-tinymce), [media](#media--selector-de-archivoimagen), [gallery](#gallery--galería-de-imágenes), [list](#list--lista-de-texto)
    - [accordion](#accordion--ítems-repetibles-faq-pasos), [repeater](#repeater--filas-repetibles-configurables)
    - [relationship / get_posts](#relationship--get_posts--posts-relacionados), [get_terms](#get_terms--términos-de-taxonomía)
    - [group](#group--agrupador-de-campos), [map](#map--selector-de-coordenadas)
@@ -529,6 +529,44 @@ Cada ítem tiene: alt text editable, campo de URL, botón Upload y drag & drop p
    "title": "Foto 1", "item": "20260528_001", "sizes": {…}, "mime": "image/jpeg",
    "width": 1200, "height": 800}
 ]
+```
+
+---
+
+### `list` — Lista de texto
+
+Cada ítem tiene un textarea, drag & drop para reordenar, y botón add/remove. Similar a `gallery` pero con texto en lugar de imágenes.
+
+**Backend:**
+```php
+[
+    'label'   => 'Lista de contenidos',
+    'id'      => 'lista_contenidos',
+    'type'    => 'list',
+    'default' => '',
+]
+```
+
+**Guardado** — JSON array:
+```json
+[
+  {"item": "20260528_001", "text": "Contenido del primer ítem"},
+  {"item": "20260528_002", "text": "Contenido del segundo ítem"}
+]
+```
+
+**Frontend:**
+```php
+$json  = get_post_meta(get_the_ID(), 'lista_contenidos', true);
+$items = $json ? json_decode($json) : [];
+
+if ($items) : ?>
+<ul class="lista">
+    <?php foreach ($items as $item) : ?>
+    <li><?php echo esc_html($item->text); ?></li>
+    <?php endforeach; ?>
+</ul>
+<?php endif; ?>
 ```
 
 **Frontend:**

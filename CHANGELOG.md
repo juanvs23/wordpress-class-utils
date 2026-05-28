@@ -6,6 +6,35 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.14.0] — 2026-05-28
+
+### Agregado — nuevo componente `list`
+- **`list_input()`** (`input-fields.php`): nuevo método que renderiza un componente de lista repetible con textarea por ítem. Sigue el mismo patrón que `gallery_input()`: hidden JSON array `[{item, text}]`, drag-and-drop sortable, add/remove con botones, y footer con "Add item".
+- **Caso `list` en save handlers** (`class-metabox.php`, `class-termeta.php`, `class-usermetabox.php`): almacenamiento raw del JSON generado por JS, junto a `gallery` y `accordion`.
+- **Caso `list` en rendering switches** (`class-metabox.php`, `class-termeta.php`, `class-usermetabox.php`): llama a `list_input()` para renderizar el campo.
+- **List sortable + textarea sync** (`media.js`): jQuery UI Sortable sobre `.list-sortable` con handle `.list-drag-handle`; al soltar reordena el JSON array. Evento `input/change` en `.list-textarea` actualiza `data[idx].text` en el JSON oculto.
+- **`addiTemList()` / `removeListItem()`** (`media.js`): funciones globales para añadir/clonar ítems vacíos y eliminar ítems filtrando el JSON por `data-item`.
+
+### Corregido — componente `list` no persistía ni mostraba datos
+- **`addiTemList()`** (`media.js`): clonaba el DOM con un `data-item` nuevo pero no creaba la entrada en el hidden `list-data`. El textarea handler buscaba `data[idx].item === dataItem`, no encontraba coincidencia (`idx === -1`), y descartaba el cambio. Ahora hace `data.push({item: uniqueId, text: ''})` al añadir un ítem.
+- **Textarea sync handler** (`media.js`): solo actualizaba si `idx !== -1`. Si la entrada no existía (fallback de seguridad), el cambio se perdía. Ahora el `else` crea la entrada con `data.push({item: dataItem, text: $textarea.val()})`.
+- **Estilos list** (`admin.css`): `.coltman-list`, `.coltman-list-item`, `.list-drag-handle`, `.list-textarea`, `.list-sort-placeholder`, `.coltman-list-footer`.
+- **Tests** (`InputFieldsTest.php`): 3 tests nuevos (`test_list_input_outputs_list_wrapper`, `test_list_input_includes_add_item_button`, `test_list_input_renders_existing_items`). Suite: 256 tests / 470 assertions.
+
+---
+
+## [1.13.1] — 2026-05-28
+
+### Corregido — componente `gallery` no persistía datos
+- **Upload handler** (`media.js`): `e.currentTarget.parentNode.classList.contains('get-image')` revisaba `.coltman-gallery-url-row`, que no tiene la clase `get-image` (está en `.coltman-gallery-fields`). Se cambió a `e.currentTarget.closest('.get-image')` para que el bloque que construye el JSON con `id, alt, sizes, url` se ejecute al subir una imagen.
+- **Sortable stop** (`media.js`): `$container.closest('.gallery')` no encontraba el wrapper (la clase es `.coltman-gallery`). El `$inputGallery` quedaba vacío y el nuevo orden nunca se persistía al JSON. Corregido a `.coltman-gallery`.
+- **Alt text sync** (`media.js`): mismo error — `$altInput.closest('.gallery')` → `.coltman-gallery`. El alt edit nunca actualizaba el JSON.
+- **URL manual sync** (`media.js`): se sincronizaba la miniatura pero no el hidden gallery-data. Ahora también actualiza `data[idx].url`.
+- **Thumbnail `onerror`** (`input-fields.php`): el atributo inline causaba race condition con el `src=""` inicial, eliminando la clase `has-image` tras un upload exitoso. Reemplazado por handler delegado en `media.js`.
+- **`addiTemImage`** (`media.js`): `e.parentNode` apuntaba a `.coltman-gallery-footer` (padre del botón), pero `.gallery-container` y `.gallery-item` son hermanos. Corregido con `e.closest('.coltman-gallery')` y búsqueda de items dentro del contenedor correcto.
+
+---
+
 ## [1.13.0] — 2026-05-28
 
 ### Mejoras visuales — componente `gallery`

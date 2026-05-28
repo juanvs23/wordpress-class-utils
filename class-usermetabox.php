@@ -160,6 +160,9 @@
                 case 'gallery':
                     $this->coltmanInputs->gallery_input( $field, $value );
                     break;
+                case 'list':
+                    $this->coltmanInputs->list_input( $field, $value );
+                    break;
                 case 'select':
                     $this->coltmanInputs->select( $field, $value );
                     break;
@@ -236,6 +239,10 @@
                     case 'get_posts':
                         // Se espera un array, lo guardamos como JSON
                         $value = is_array( $value ) ? json_encode( $value ) : '[]';
+                        break;
+                    case 'gallery':
+                    case 'accordion':
+                    case 'list':
                         break;
                     case 'checkbox':
                         // Para checkbox, si está presente suele ser 'on', sino ya es ''

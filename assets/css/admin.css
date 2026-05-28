@@ -239,6 +239,23 @@
 .coltman-gallery-footer { padding: 8px 12px; background: #f9f9f9; border-top: 1px solid #e2e4e7; }
 .coltman-gallery-add { display: inline-flex; align-items: center; gap: 5px; }
 
+/* ── List ──────────────────────────────────────────────────────────────── */
+
+.coltman-list { border: 1px solid #e2e4e7; border-radius: 6px; background: #fff; overflow: hidden; }
+.coltman-list-items { display: flex; flex-direction: column; gap: 0; padding: 0; }
+.coltman-list-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #f0f0f1; background: #fff; transition: background 0.12s; }
+.coltman-list-item:last-child { border-bottom: none; }
+.coltman-list-item:hover { background: #fafafa; }
+.list-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 4px 6px; color: #c3c4c7; border-radius: 3px; font-size: 18px; flex-shrink: 0; line-height: 1; user-select: none; margin-top: 8px; }
+.list-drag-handle:hover { color: #646970; background: rgba(0,0,0,0.05); }
+.list-drag-handle:active { cursor: grabbing; }
+.list-textarea { flex: 1; min-height: 80px; resize: vertical; }
+.coltman-list-remove { background: none; border: 1px solid transparent; color: #c3c4c7; border-radius: 4px; cursor: pointer; padding: 4px 7px; font-size: 15px; flex-shrink: 0; line-height: 1; transition: color 0.15s, background 0.15s, border-color 0.15s; margin-top: 6px; }
+.coltman-list-remove:hover { color: #d63638; background: #fce8e8; border-color: #f0a0a0; }
+.list-sort-placeholder { background: #f0f6fc; border: 2px dashed #2271b1; border-radius: 4px; min-height: 100px; opacity: 0.6; }
+.coltman-list-footer { padding: 8px 12px; background: #f9f9f9; border-top: 1px solid #e2e4e7; }
+.coltman-list-add { display: inline-flex; align-items: center; gap: 5px; }
+
 /* ── Repeater ──────────────────────────────────────────────────────────── */
 
 .repeater-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 6px; color: #8c8f94; border-radius: 3px; }

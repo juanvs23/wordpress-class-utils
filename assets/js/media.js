@@ -124,8 +124,9 @@ jQuery.noConflict();
                 let attachment = rwpMediaUploader.state().get('selection').first().toJSON();
                 coltmanLog(attachment);
                 button.prev().val(attachment[button.data('return')]);
-                if(e.currentTarget.parentNode.classList.contains('get-image')){
-                    const imageItem    = e.currentTarget.parentNode;
+                const getImageEl = e.currentTarget.closest('.get-image');
+                if(getImageEl){
+                    const imageItem    = getImageEl;
                     const galleryItem  = imageItem.parentNode;
                     const gallery      = galleryItem.parentNode.parentNode;
                     const inputGallery = gallery.querySelector('input.gallery-data');
@@ -175,7 +176,7 @@ jQuery.noConflict();
                 forcePlaceholderSize: true,
                 stop: function() {
                     var $container   = $(this);
-                    var $inputGallery = $container.closest('.gallery').find('.gallery-data');
+                    var $inputGallery = $container.closest('.coltman-gallery').find('.gallery-data');
                     try {
                         var currentData = JSON.parse($inputGallery.val() || '[]');
                         var newOrder    = [];
@@ -190,6 +191,57 @@ jQuery.noConflict();
             });
         }
 
+        // ── List sortable ──────────────────────────────────────────────────────
+        if (typeof $.fn.sortable === 'function') {
+            $('.list-sortable').sortable({
+                handle:               '.list-drag-handle',
+                axis:                 'y',
+                cursor:               'grabbing',
+                tolerance:            'pointer',
+                placeholder:          'list-sort-placeholder',
+                forcePlaceholderSize: true,
+                stop: function() {
+                    var $container  = $(this);
+                    var $inputList  = $container.closest('.coltman-list').find('.list-data');
+                    try {
+                        var currentData = JSON.parse($inputList.val() || '[]');
+                        var newOrder    = [];
+                        $container.find('.list-item').each(function() {
+                            var id    = String($(this).data('item'));
+                            var entry = currentData.find(function(item) { return String(item.item) === id; });
+                            if (entry) newOrder.push(entry);
+                        });
+                        $inputList.val(JSON.stringify(newOrder));
+                    } catch (err) {}
+                },
+            });
+        }
+
+        // ── List textarea live sync ────────────────────────────────────────────
+        $('body').on('input change', '.list-textarea', function() {
+            var $textarea  = $(this);
+            var $item      = $textarea.closest('.list-item');
+            if (!$item.length) return;
+            var $list       = $textarea.closest('.coltman-list');
+            var $inputList  = $list.find('.list-data');
+            var dataItem    = String($item.data('item'));
+            try {
+                var data = JSON.parse($inputList.val() || '[]');
+                var idx  = data.findIndex(function(entry) { return String(entry.item) === dataItem; });
+                if (idx !== -1) {
+                    data[idx].text = $textarea.val();
+                } else {
+                    data.push({item: dataItem, text: $textarea.val()});
+                }
+                $inputList.val(JSON.stringify(data));
+            } catch(e) {}
+        });
+
+        // ── Gallery thumbnail image load error ────────────────────────────
+        $('body').on('error', '.coltman-gallery-thumb', function() {
+            $(this).removeClass('has-image');
+        });
+
         // ── Gallery thumbnail sync on manual URL edit ─────────────────────────
         $('body').on('input change', '.image-url', function() {
             var $input = $(this);
@@ -202,13 +254,25 @@ jQuery.noConflict();
             } else {
                 $thumb.attr('src', '').removeClass('has-image');
             }
+            // Sync hidden JSON
+            var $gallery      = $input.closest('.coltman-gallery');
+            var $inputGallery = $gallery.find('.gallery-data');
+            var dataItem      = String($item.data('item'));
+            try {
+                var data   = JSON.parse($inputGallery.val() || '[]');
+                var imgIdx = data.findIndex(function(img) { return String(img.item) === dataItem; });
+                if (imgIdx !== -1) {
+                    data[imgIdx].url = url;
+                    $inputGallery.val(JSON.stringify(data));
+                }
+            } catch(e) {}
         });
 
         // ── Gallery alt text live sync ────────────────────────────────────────
         $('body').on('input change', '.image-alt', function() {
             var $altInput    = $(this);
             var $item        = $altInput.closest('.gallery-item');
-            var $gallery     = $altInput.closest('.gallery');
+            var $gallery     = $altInput.closest('.coltman-gallery');
             var $inputGallery = $gallery.find('.gallery-data');
             if (!$item.length || !$inputGallery.length) return;
             var dataItem = String($item.data('item'));
@@ -656,9 +720,9 @@ function removeiTem(e) {
 }
 
 function addiTemImage(e){
-    const gallery = e.parentNode;
+    const gallery = e.closest('.coltman-gallery');
     const galleryContainer = gallery.querySelector('.gallery-container');
-    const galleryItems = gallery.querySelectorAll('.gallery-item');
+    const galleryItems = galleryContainer.querySelectorAll('.gallery-item');
     const galleryItemExample = galleryItems[0].cloneNode(true);
     const uniqueId = Date.now().toString() + Math.floor(Math.random() * 10000);
     galleryItemExample.dataset.item = uniqueId;
@@ -674,6 +738,44 @@ function addiTemImage(e){
     }
 }
 
+// ── List ──────────────────────────────────────────────────────────────────────
+
+function addiTemList(e){
+    const list = e.closest('.coltman-list');
+    const container = list.querySelector('.list-container');
+    const inputList = list.querySelector('input.list-data');
+    const items = container.querySelectorAll('.list-item');
+    const example = items[0].cloneNode(true);
+    const uniqueId = Date.now().toString() + Math.floor(Math.random() * 10000);
+    example.dataset.item = uniqueId;
+    const textarea = example.querySelector('.list-textarea');
+    if (textarea) textarea.value = '';
+    container.appendChild(example);
+    // Add empty entry to JSON so the textarea sync handler can find it
+    const data = JSON.parse(inputList.value || '[]');
+    data.push({item: uniqueId, text: ''});
+    inputList.value = JSON.stringify(data);
+    if (typeof jQuery !== 'undefined' && typeof jQuery.fn.sortable === 'function') {
+        jQuery(container).sortable('refresh');
+    }
+}
+
+function removeListItem(e) {
+    const list = e.closest('.coltman-list');
+    const inputList = list.querySelector('input.list-data');
+    const container = list.querySelector('.list-container');
+    const item = e.closest('.list-item');
+    const dataItem = item.dataset.item;
+    if (container.children.length > 1) {
+        const listData = JSON.parse(inputList.value);
+        inputList.value = JSON.stringify(listData.filter((entry) => entry.item != dataItem));
+        item.remove();
+    } else {
+        const textarea = item.querySelector('.list-textarea');
+        if (textarea) textarea.value = '';
+        inputList.value = JSON.stringify([]);
+    }
+}
 
 // ── Accordion ─────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 # Contexto: carpeta `classes/`
 
-> **Versión actual: 1.13.0** — 2026-05-28  
-> Suite: **253 tests / 464 assertions** (`php vendor/bin/phpunit`)  
+> **Versión actual: 1.14.0** — 2026-05-28  
+> Suite: **256 tests / 470 assertions** (`php vendor/bin/phpunit`)  
 > Ver `CHANGELOG.md` para el historial completo, `docs/roadmap.md` para el estado de cada fase.
 
 ---
@@ -164,6 +164,7 @@ Renderizado centralizado de todos los tipos de campo. Usado por `ColtmanCreateMe
 | `select()` | `select` | string | array `['value'=>…,'label'=>…]` |
 | `media()` | `media` | URL o ID | `rwp-media-toggle` + wp.media() |
 | `gallery_input()` | `gallery` | JSON array | `[{id,url,alt,sizes,title,…}]` — alt editable, drag-and-drop, miniatura en tiempo real |
+| `list_input()` | `list` | JSON array | `[{item,text}]` — textarea por ítem, drag-and-drop, add/remove |
 | `accordion()` | `accordion` | JSON array | `[{id,title,content,image}]` — WYSIWYG con headings, paste limpio, estado activo |
 | `repeater()` | `repeater` | JSON array | filas configurables, drag-and-drop |
 | `color()` | `color` | `#rrggbb` | `wp-color-picker` |
@@ -245,7 +246,7 @@ new ColtmanCreateMetabox([
 | `editor` | `wp_filter_post_kses()` |
 | `number` | `sanitize_text_field()` |
 | `checkbox` | `sanitize_text_field()` |
-| `gallery`, `accordion` | raw (JSON generado en JS) |
+| `gallery`, `accordion`, `list` | raw (JSON generado en JS) |
 | `repeater` | sanitización por tipo de sub-campo |
 | `relationship`, `get_posts` | `json_encode(array)` |
 | `get_terms` | `json_encode` (multiple — defecto) o `sanitize_text_field` (`multiple:false`) |
@@ -336,6 +337,8 @@ Script del admin para todos los campos interactivos. Se encola en `admin_enqueue
 | Gallery sortable | jQuery UI Sortable en `.gallery-sortable`; stop reordena JSON |
 | Gallery alt sync | Evento `input/change` en `.image-alt` → actualiza JSON |
 | Gallery thumbnail | Evento `input/change` en `.image-url` → actualiza `<img>` en tiempo real |
+| List sortable | jQuery UI Sortable en `.list-sortable`; stop reordena JSON |
+| List textarea sync | Evento `input/change` en `.list-textarea` → actualiza JSON |
 | Accordion sortable | jQuery UI Sortable en `.accordion-items` |
 | Select2 init | `.js-select2` (get_terms/get_posts básico) |
 | Relationship select | `.js-relationship-select` — Select2 AJAX con `coltman_relationship_search` |
@@ -365,7 +368,9 @@ Script del admin para todos los campos interactivos. Se encola en `admin_enqueue
 | `coltmanLeafletIcon()` | `L.icon({...})` con rutas absolutas; elimina `_getIconUrl` |
 | `coltmanInitMap(el)` | Leaflet completo en `div.coltman-map-container` |
 | `addiTemImage(e)` | Añade ítem a gallery; limpia URL, alt y miniatura |
+| `addiTemList(e)` | Añade ítem a list; clona el primero y limpia textarea |
 | `removeiTem(e)` | Elimina ítem de gallery; filtra JSON por `data-item` |
+| `removeListItem(e)` | Elimina ítem de list; filtra JSON por `data-item` |
 | `normalizeQuotes(str)` | `'` → `'`, `"` → `"` |
 | `escapeForPhpJson(str)` | Escapa `\`, `'`, `"` |
 | `sanitizeForJSON(value)` | Escapa comillas y caracteres HTML |
@@ -414,7 +419,7 @@ Suite PHPUnit 10. No requiere WordPress instalado — usa stubs PHP puros en `te
 ```bash
 cd classes/
 php vendor/bin/phpunit
-# → OK (253 tests, 464 assertions)
+# → OK (256 tests, 470 assertions)
 ```
 
 ### Cobertura de tests
@@ -424,13 +429,13 @@ php vendor/bin/phpunit
 | `RegisterPostTest` | `ColtmanRegisterPost` | 18 |
 | `RegisterTaxonomyTest` | `ColtmanRegisterTaxonomy` | 19 |
 | `CreateMetaboxTest` | `ColtmanCreateMetabox` | 36 |
-| `InputFieldsTest` | `ColtmanInputFields` | 68 |
+| `InputFieldsTest` | `ColtmanInputFields` | 71 |
 | `TermMetaTest` | `ColtmanTermMeta` | 26 |
 | `UserMetaTest` | `ColtmanCreateUserMeta` | 29 |
 | `UtilsTest` | `coltman_trim_content_text_fn`, `formaturltext` | 9 |
 | `ReadTimeTest` | `get_estimated_reading_time` | 13 |
 | `NavigationsAnchorsTest` | heading injection functions | 21 |
-| **Total** | | **253 tests / 464 assertions** |
+| **Total** | | **256 tests / 470 assertions** |
 
 ### Stubs disponibles en `tests/Stubs/wordpress.php`
 

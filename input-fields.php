@@ -237,8 +237,7 @@ if(!class_exists('ColtmanInputFields')){
                         <div class="coltman-gallery-thumb-wrap">
                             <img class="coltman-gallery-thumb<?php echo $has_img; ?>"
                                  src="<?php echo esc_url( $item->url ); ?>"
-                                 alt="<?php echo esc_attr( $alt_val ); ?>"
-                                 onerror="this.classList.remove('has-image')">
+                                 alt="<?php echo esc_attr( $alt_val ); ?>">
                             <span class="coltman-gallery-thumb-placeholder" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                             </span>
@@ -261,7 +260,7 @@ if(!class_exists('ColtmanInputFields')){
                     <div class="coltman-gallery-item gallery-item" data-item="<?php echo esc_attr( date('YmdHis') . mt_rand(1000, 9999) ); ?>">
                         <span class="gallery-drag-handle" title="<?php esc_attr_e( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ); ?>">&#8942;</span>
                         <div class="coltman-gallery-thumb-wrap">
-                            <img class="coltman-gallery-thumb" src="" alt="" onerror="this.classList.remove('has-image')">
+                            <img class="coltman-gallery-thumb" src="" alt="">
                             <span class="coltman-gallery-thumb-placeholder" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                             </span>
@@ -291,7 +290,52 @@ if(!class_exists('ColtmanInputFields')){
             
             <?php
         }
-    
+
+        /**
+         * Echoes a repeatable list field with textarea items.
+         *
+         * Each item stores a JSON object: {item, text}.
+         * The full list is stored as a JSON array in a hidden input named $field['id'].
+         * Requires media.js for add/remove/sort behaviour.
+         *
+         * @param array<string, mixed> $field Field config.
+         * @param string               $value JSON-encoded array of list item objects.
+         * @return void
+         */
+        public function list_input( $field, $value = '' ) {
+            $value = !is_null( $value ) && $value !='' ? json_decode($value) : [];
+            ?>
+            <div class="coltman-list">
+                <input type="hidden" class="list-data" name="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $field['id'] ); ?>" value='<?php echo esc_attr( json_encode( $value ) ); ?>'>
+                <div class="coltman-list-items list-container list-sortable">
+                    <?php if ( count( $value ) > 0 ) :
+                        foreach ( $value as $item ) :
+                            $text_val = isset( $item->text ) ? $item->text : '';
+                    ?>
+                    <div class="coltman-list-item list-item" data-item="<?php echo esc_attr( $item->item ); ?>">
+                        <span class="list-drag-handle" title="<?php esc_attr_e( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ); ?>">&#8942;</span>
+                        <textarea class="list-textarea" placeholder="<?php esc_attr_e( 'Enter text...', COLTMAN_TEXT_DOMAIN ); ?>"><?php echo esc_textarea( $text_val ); ?></textarea>
+                        <button type="button" class="coltman-list-remove" onclick="removeListItem(this)" title="<?php esc_attr_e( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>">&#10005;</button>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php else : ?>
+                    <div class="coltman-list-item list-item" data-item="<?php echo esc_attr( date('YmdHis') . mt_rand(1000, 9999) ); ?>">
+                        <span class="list-drag-handle" title="<?php esc_attr_e( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ); ?>">&#8942;</span>
+                        <textarea class="list-textarea" placeholder="<?php esc_attr_e( 'Enter text...', COLTMAN_TEXT_DOMAIN ); ?>"></textarea>
+                        <button type="button" class="coltman-list-remove" onclick="removeListItem(this)" title="<?php esc_attr_e( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>">&#10005;</button>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="coltman-list-footer">
+                    <button type="button" onclick="addiTemList(this)" class="button coltman-list-add">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <?php esc_html_e( 'Add item', COLTMAN_TEXT_DOMAIN ); ?>
+                    </button>
+                </div>
+            </div>
+            <?php
+        }
+
         /**
          * Echoes a <select> element built from field options.
          *

@@ -321,6 +321,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 						break;
 					case 'gallery':
 					case 'accordion':
+					case 'list':
 						if ( isset( $_POST[ $field['id'] ] ) ) {
 							update_post_meta( $post_id, $field['id'], $_POST[ $field['id'] ] );
 						}
@@ -535,6 +536,9 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					break;
 				case 'gallery':
 					$this->coltmanInputs->gallery_input( $field, $value );
+					break;
+				case 'list':
+					$this->coltmanInputs->list_input( $field, $value );
 					break;
 				case 'select':
 					$this->coltmanInputs->select( $field, $value );
