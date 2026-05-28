@@ -20,8 +20,8 @@ if(!class_exists('ColtmanInputFields')){
             printf(
                 '<label class="rwp-checkbox-label"><input %s id="%s" name="%s" type="checkbox"> %s</label>',
                 $checked,
-                $field['id'], $field['id'],
-                isset( $field['description'] ) ? $field['description'] : ''
+                esc_attr( $field['id'] ), esc_attr( $field['id'] ),
+                isset( $field['description'] ) ? esc_html( $field['description'] ) : ''
             );
         }
         
@@ -56,23 +56,8 @@ if(!class_exists('ColtmanInputFields')){
          * @param string               $value JSON-encoded array of selected post IDs (e.g. '[1,5,12]').
          * @return void
          */
-        public function get_posts ( $field, $value= '' ){
-            global $wpdb;
-            $post_type = $field['post_type'];
-            $get_posts = get_posts(array('post_type' => $post_type, 'post_status' => 'publish', 'posts_per_page' => -1));
-           // var_dump($value);
-            ?>
-                <select <?php echo count($get_posts)== 0 ? 'disabled' :'' ?>  multiple="multiple"  name="<?php echo $field['id'];?>[]" id="<?php echo $field['id'];?>"  class="block w-full js-select2 regular-text min-h-10" data-placeholder="<?php echo esc_attr( isset( $field['placeholder'] ) ? $field['placeholder'] : __( 'Select posts…', COLTMAN_TEXT_DOMAIN ) ); ?>" >
-                    <?php if(count($get_posts)> 0): ?>
-                       
-                        <?php foreach($get_posts as $post): ?>
-                            <option value="<?php echo $post->ID;?>" <?php echo in_array($post->ID, json_decode($value)) ? 'selected' : '';?>><?php echo $post->post_title;?></option>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <option value=""><?php echo __( "Don't have posts available", COLTMAN_TEXT_DOMAIN ); ?></option>
-                    <?php endif; ?>
-                </select>
-            <?php
+        public function get_posts( $field, $value = '' ): void {
+            $this->relationship( $field, $value );
         }
 
 
@@ -83,21 +68,42 @@ if(!class_exists('ColtmanInputFields')){
          * @param string               $value Selected term_id as string.
          * @return void
          */
-        public function  get_terms( $field, $value= '' ){
-            $taxonomy = $field['taxonomy'];
-            $terms = get_terms( $taxonomy, ['hide_empty' => false] );
+        public function get_terms( $field, $value = '' ): void {
+            $raw_tax     = isset( $field['taxonomy'] ) ? $field['taxonomy'] : 'category';
+            $taxonomy    = is_array( $raw_tax )
+                ? implode( ',', $raw_tax )
+                : implode( ',', array_map( 'trim', explode( ',', $raw_tax ) ) );
+            $multiple    = ! ( isset( $field['multiple'] ) && ! $field['multiple'] );
+            $placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : __( 'Search terms…', COLTMAN_TEXT_DOMAIN );
+            $nonce       = wp_create_nonce( 'coltman_term_search' );
+
+            $selected_ids = [];
+            if ( $value !== '' && $value !== null ) {
+                if ( $multiple ) {
+                    $decoded      = json_decode( $value, true );
+                    // backward compat: plain string ID stored before multiple was the default
+                    $selected_ids = is_array( $decoded ) ? $decoded : ( $value !== '' ? [ $value ] : [] );
+                } else {
+                    $selected_ids = [ $value ];
+                }
+            }
             ?>
-            <select <?php echo count($terms)== 0 ? 'disabled' :'' ?> name="<?php echo $field['id'];?>" id="<?php echo $field['id'];?>"  class="block w-full js-select2 regular-text min-h-10" data-placeholder="<?php echo esc_attr( isset( $field['placeholder'] ) ? $field['placeholder'] : __( 'Select a term', COLTMAN_TEXT_DOMAIN ) ); ?>" data-allow-clear="1">
-            <?php if(count($terms)> 0): ?>
-                <option value=""><?php echo __( 'Select a term', COLTMAN_TEXT_DOMAIN ); ?></option>
-                <?php foreach($terms as $term): ?>
-                    <option value="<?php echo $term->term_id;?>" <?php echo $value == $term->term_id ? 'selected' : '';?>><?php echo $term->name;?></option>
+            <select id="<?php echo esc_attr( $field['id'] ); ?>"
+                    name="<?php echo esc_attr( $field['id'] ); ?><?php echo $multiple ? '[]' : ''; ?>"
+                    <?php echo $multiple ? 'multiple="multiple"' : ''; ?>
+                    class="block w-full js-term-select regular-text min-h-10"
+                    data-taxonomy="<?php echo esc_attr( $taxonomy ); ?>"
+                    data-nonce="<?php echo esc_attr( $nonce ); ?>"
+                    data-placeholder="<?php echo esc_attr( $placeholder ); ?>"
+                    <?php echo ! $multiple ? 'data-allow-clear="1"' : ''; ?>>
+                <?php foreach ( $selected_ids as $term_id ) :
+                    $term = get_term( (int) $term_id );
+                    if ( ! $term || is_wp_error( $term ) ) continue;
+                ?>
+                <option value="<?php echo esc_attr( (string) $term_id ); ?>" selected="selected"><?php echo esc_html( $term->name ); ?></option>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <option value=""><?php echo __( "Don't have terms available", COLTMAN_TEXT_DOMAIN ); ?></option>
-            <?php endif;?>
             </select>
-            <?php    
+            <?php
         }
 
        
@@ -118,11 +124,11 @@ if(!class_exists('ColtmanInputFields')){
             }
             printf(
                 '<input class="regular-text block w-full min-h-10 %s" id="%s" name="%s" %s type="%s" value="%s">',
-                isset( $field['class'] ) ? $field['class'] : '',
-                $field['id'], $field['id'],
-                isset( $field['pattern'] ) ? "pattern='{$field['pattern']}'" : '',
-                $field['type'],
-                $value
+                esc_attr( isset( $field['class'] ) ? $field['class'] : '' ),
+                esc_attr( $field['id'] ), esc_attr( $field['id'] ),
+                isset( $field['pattern'] ) ? 'pattern="' . esc_attr( $field['pattern'] ) . '"' : '',
+                esc_attr( $field['type'] ),
+                esc_attr( $value )
             );
         }
     
@@ -168,11 +174,11 @@ if(!class_exists('ColtmanInputFields')){
            $placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : '';
             printf(
                 '<textarea class="block w-full regular-text min-h-10"  rows="%d" placeholder="%s" id="%s" name="%s">%s</textarea>',
-                isset( $field['rows'] ) ? $field['rows'] : 5,
-                $placeholder,
-                $field['id'], 
-                $field['id'],
-                $value
+                isset( $field['rows'] ) ? (int) $field['rows'] : 5,
+                esc_attr( $placeholder ),
+                esc_attr( $field['id'] ),
+                esc_attr( $field['id'] ),
+                esc_textarea( $value )
             );
         }
     
@@ -186,13 +192,13 @@ if(!class_exists('ColtmanInputFields')){
         public function input_minmax( $field, $value = '' ) {
             printf(
                 '<input class="block w-full regular-text min-h-10" id="%s" %s %s name="%s" %s type="%s" value="%s">',
-                $field['id'],
-                isset( $field['max'] ) ? "max='{$field['max']}'" : '',
-                isset( $field['min'] ) ? "min='{$field['min']}'" : '',
-                $field['id'],
-                isset( $field['step'] ) ? "step='{$field['step']}'" : '',
-                $field['type'],
-                $value
+                esc_attr( $field['id'] ),
+                isset( $field['max'] )  ? 'max="'  . esc_attr( $field['max'] )  . '"' : '',
+                isset( $field['min'] )  ? 'min="'  . esc_attr( $field['min'] )  . '"' : '',
+                esc_attr( $field['id'] ),
+                isset( $field['step'] ) ? 'step="' . esc_attr( $field['step'] ) . '"' : '',
+                esc_attr( $field['type'] ),
+                esc_attr( $value )
             );
         }
     
@@ -215,61 +221,72 @@ if(!class_exists('ColtmanInputFields')){
             $text_button = isset( $field['button-text'] ) ? $field['button-text'] : __( 'Upload', COLTMAN_TEXT_DOMAIN );
             $value = !is_null( $value ) && $value !='' ? json_decode($value) : [];
             ?>
-            <div class="gallery">
-                <input type="hidden" class="gallery-data"  name="<?php echo $field['id']; ?>" id="<?php echo $field['id']; ?>" value='<?php echo json_encode($value); ?>'>
-                <div class="flex flex-col w-full gap-4 pb-3 gallery-container" 
-                    data-buttonmodal="<?php echo $modal_button; ?>"
-                    data-buttonmodaltitle="<?php echo $modal_title; ?>"
-                    data-buttonreturn="<?php echo $return; ?>">
-                    <?php if (count($value)>0): 
-                            foreach($value as $item){
-                                $html ='';
-                                $html .= '<div class="flex items-center justify-between gap-2 gallery-item" data-item="'.$item->item.'">';
-                                $html .= '<div class="flex items-center justify-center w-full gap-2 get-image" >';
-                                $html .= '<input type="text" class="block w-full h-4 px-3 py-2 regular-text block w-full min-h-10 rounded image-url" value="'.$item->url.'">';
-                                $html .= '<button class="px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" ';
-                                $html .= 'data-modal-button="'.$modal_button.'" ';
-                                $html .= 'data-modal-title="'.$modal_title.'" ';
-                                $html .= 'data-return="'.$return.'" ';
-                                $html .= 'type="button">'.$text_button.'</button>';
-                                $html .= '</div>';
-                                $html .= '<button type="button" onclick="removeiTem(this)" class="px-3 py-2 text-white transition duration-300 bg-red-500 rounded btn btn-primary remove-image hover:bg-red-600">';
-                                $html .=  __( 'Remove', COLTMAN_TEXT_DOMAIN );
-                                $html .= '</button>';
-                                $html .= '</div>';
-                                echo $html;
-                            }; ?>
-                    <?php else: ?>
-                        <div class="flex items-center justify-between gap-2 gallery-item" data-item="<?php echo date('YmdHis') . mt_rand(1000, 9999); ?>">
-                            <div class="flex items-center justify-center w-full gap-2 get-image" >
-                                <input type="text" class="block w-full h-4 px-3 py-2 regular-text block w-full min-h-10 rounded image-url">
-                                <button 
-                                    class="px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" 
-                                    data-modal-button="<?php echo $modal_button; ?>" 
-                                    data-modal-title="<?php echo $modal_title; ?>"
-                                    data-return="<?php echo $return; ?>" type="button">
-                                    <?php echo $text_button; ?>
-                                </button>
-                            </div>
-                            <button type="button" 
-                                onclick="removeiTem(this)" 
-                                class="px-3 py-2 text-white transition duration-300 bg-red-500 rounded btn btn-primary remove-image hover:bg-red-600">
-                                <?php echo __( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>
-                            </button>
+            <div class="coltman-gallery">
+                <input type="hidden" class="gallery-data" name="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $field['id'] ); ?>" value='<?php echo esc_attr( json_encode( $value ) ); ?>'>
+                <div class="coltman-gallery-list gallery-container gallery-sortable"
+                    data-buttonmodal="<?php echo esc_attr( $modal_button ); ?>"
+                    data-buttonmodaltitle="<?php echo esc_attr( $modal_title ); ?>"
+                    data-buttonreturn="<?php echo esc_attr( $return ); ?>">
+                    <?php if ( count( $value ) > 0 ) :
+                        foreach ( $value as $item ) :
+                            $alt_val = isset( $item->alt ) ? $item->alt : '';
+                            $has_img = ! empty( $item->url ) ? ' has-image' : '';
+                    ?>
+                    <div class="coltman-gallery-item gallery-item" data-item="<?php echo esc_attr( $item->item ); ?>">
+                        <span class="gallery-drag-handle" title="<?php esc_attr_e( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ); ?>">&#8942;</span>
+                        <div class="coltman-gallery-thumb-wrap">
+                            <img class="coltman-gallery-thumb<?php echo $has_img; ?>"
+                                 src="<?php echo esc_url( $item->url ); ?>"
+                                 alt="<?php echo esc_attr( $alt_val ); ?>"
+                                 onerror="this.classList.remove('has-image')">
+                            <span class="coltman-gallery-thumb-placeholder" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            </span>
                         </div>
+                        <div class="coltman-gallery-fields get-image">
+                            <div class="coltman-gallery-url-row">
+                                <input type="text" class="regular-text image-url" value="<?php echo esc_attr( $item->url ); ?>" placeholder="<?php esc_attr_e( 'Image URL', COLTMAN_TEXT_DOMAIN ); ?>">
+                                <button class="button coltman-gallery-upload rwp-media-toggle"
+                                        data-modal-button="<?php echo esc_attr( $modal_button ); ?>"
+                                        data-modal-title="<?php echo esc_attr( $modal_title ); ?>"
+                                        data-return="<?php echo esc_attr( $return ); ?>"
+                                        type="button"><?php echo esc_html( $text_button ); ?></button>
+                            </div>
+                            <input type="text" class="regular-text image-alt" placeholder="<?php esc_attr_e( 'Alt text', COLTMAN_TEXT_DOMAIN ); ?>" value="<?php echo esc_attr( $alt_val ); ?>">
+                        </div>
+                        <button type="button" class="coltman-gallery-remove remove-image" onclick="removeiTem(this)" title="<?php esc_attr_e( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>">&#10005;</button>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php else : ?>
+                    <div class="coltman-gallery-item gallery-item" data-item="<?php echo esc_attr( date('YmdHis') . mt_rand(1000, 9999) ); ?>">
+                        <span class="gallery-drag-handle" title="<?php esc_attr_e( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ); ?>">&#8942;</span>
+                        <div class="coltman-gallery-thumb-wrap">
+                            <img class="coltman-gallery-thumb" src="" alt="" onerror="this.classList.remove('has-image')">
+                            <span class="coltman-gallery-thumb-placeholder" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            </span>
+                        </div>
+                        <div class="coltman-gallery-fields get-image">
+                            <div class="coltman-gallery-url-row">
+                                <input type="text" class="regular-text image-url" placeholder="<?php esc_attr_e( 'Image URL', COLTMAN_TEXT_DOMAIN ); ?>">
+                                <button class="button coltman-gallery-upload rwp-media-toggle"
+                                        data-modal-button="<?php echo esc_attr( $modal_button ); ?>"
+                                        data-modal-title="<?php echo esc_attr( $modal_title ); ?>"
+                                        data-return="<?php echo esc_attr( $return ); ?>"
+                                        type="button"><?php echo esc_html( $text_button ); ?></button>
+                            </div>
+                            <input type="text" class="regular-text image-alt" placeholder="<?php esc_attr_e( 'Alt text', COLTMAN_TEXT_DOMAIN ); ?>">
+                        </div>
+                        <button type="button" class="coltman-gallery-remove remove-image" onclick="removeiTem(this)" title="<?php esc_attr_e( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>">&#10005;</button>
+                    </div>
                     <?php endif; ?>
-    
                 </div>
-    
-                <button type="button"
-                onclick="addiTemImage(this)" 
-                class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded btn btn-primary add-image min-w-max hover:bg-blue-600">
-                    <?php echo __( 'Add image', COLTMAN_TEXT_DOMAIN ); ?>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" class="bi bi-plus-lg" viewBox="0 0 16 16">
-                          <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
-                    </svg>
-                </button>
-    
+                <div class="coltman-gallery-footer">
+                    <button type="button" onclick="addiTemImage(this)" class="button coltman-gallery-add add-image">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <?php esc_html_e( 'Add image', COLTMAN_TEXT_DOMAIN ); ?>
+                    </button>
+                </div>
             </div>
             
             <?php
@@ -368,9 +385,17 @@ if(!class_exists('ColtmanInputFields')){
             ?>
             <div class="coltman-wysiwyg" data-for="<?php echo esc_attr( $id ); ?>">
                 <div class="coltman-wysiwyg-toolbar" role="toolbar">
+                    <select class="coltman-wysiwyg-headings" title="<?php esc_attr_e( 'Block format', COLTMAN_TEXT_DOMAIN ); ?>">
+                        <option value="p"><?php esc_html_e( 'Normal', COLTMAN_TEXT_DOMAIN ); ?></option>
+                        <option value="h2">H2</option>
+                        <option value="h3">H3</option>
+                        <option value="h4">H4</option>
+                    </select>
+                    <span class="coltman-wysiwyg-sep"></span>
                     <button type="button" class="coltman-wysiwyg-btn" data-cmd="bold"                title="<?php esc_attr_e( 'Bold',             COLTMAN_TEXT_DOMAIN ); ?>"><strong>B</strong></button>
                     <button type="button" class="coltman-wysiwyg-btn" data-cmd="italic"              title="<?php esc_attr_e( 'Italic',           COLTMAN_TEXT_DOMAIN ); ?>"><em>I</em></button>
                     <button type="button" class="coltman-wysiwyg-btn" data-cmd="underline"           title="<?php esc_attr_e( 'Underline',        COLTMAN_TEXT_DOMAIN ); ?>"><u>U</u></button>
+                    <button type="button" class="coltman-wysiwyg-btn" data-cmd="strikeThrough"       title="<?php esc_attr_e( 'Strikethrough',    COLTMAN_TEXT_DOMAIN ); ?>"><s>S</s></button>
                     <span class="coltman-wysiwyg-sep"></span>
                     <button type="button" class="coltman-wysiwyg-btn" data-cmd="insertUnorderedList" title="<?php esc_attr_e( 'Bullet list',      COLTMAN_TEXT_DOMAIN ); ?>">&#8226; List</button>
                     <button type="button" class="coltman-wysiwyg-btn" data-cmd="insertOrderedList"   title="<?php esc_attr_e( 'Ordered list',     COLTMAN_TEXT_DOMAIN ); ?>">1. List</button>
@@ -474,6 +499,258 @@ if(!class_exists('ColtmanInputFields')){
             <?php
         }
     
-    
+
+        /**
+         * Echoes a Leaflet map picker. Stores {"lat":…,"lng":…,"zoom":…} as JSON.
+         *
+         * Supported field config keys:
+         *   'provider' (string) — currently only 'leaflet' (default).
+         *   'zoom'     (int)    — default zoom level when no value is stored (default 13).
+         *
+         * @param array<string, mixed> $field Field config.
+         * @param string               $value JSON string with lat/lng/zoom or empty string.
+         * @return void
+         */
+        public function map( array $field, string $value = '' ): void {
+            $id     = esc_attr( $field['id'] );
+            $zoom   = isset( $field['zoom'] ) ? (int) $field['zoom'] : 13;
+            $coords = ( $value !== '' ) ? json_decode( $value, true ) : [];
+            $lat    = isset( $coords['lat'] )  ? (float) $coords['lat']  : '';
+            $lng    = isset( $coords['lng'] )  ? (float) $coords['lng']  : '';
+            $czoom  = isset( $coords['zoom'] ) ? (int)   $coords['zoom'] : $zoom;
+            echo '<div class="coltman-map-wrap">';
+            printf(
+                '<input type="hidden" id="%s" name="%s" value="%s">',
+                $id, $id, esc_attr( $value )
+            );
+            echo '<div class="coltman-map-coords">';
+            printf(
+                '<label class="coltman-map-coord-label">%s <input type="text" class="coltman-map-lat small-text" readonly value="%s" placeholder="lat"></label>',
+                esc_html__( 'Lat:', COLTMAN_TEXT_DOMAIN ),
+                esc_attr( (string) $lat )
+            );
+            printf(
+                '<label class="coltman-map-coord-label">%s <input type="text" class="coltman-map-lng small-text" readonly value="%s" placeholder="lng"></label>',
+                esc_html__( 'Lng:', COLTMAN_TEXT_DOMAIN ),
+                esc_attr( (string) $lng )
+            );
+            printf(
+                '<button type="button" class="button coltman-map-clear">%s</button>',
+                esc_html__( 'Clear', COLTMAN_TEXT_DOMAIN )
+            );
+            echo '</div>';
+            printf(
+                '<div class="coltman-map-container" id="map-%s" data-field="%s" data-lat="%s" data-lng="%s" data-zoom="%d"></div>',
+                $id, $id,
+                esc_attr( (string) $lat ),
+                esc_attr( (string) $lng ),
+                $czoom
+            );
+            echo '</div>';
+        }
+
+        /**
+         * Echoes a color picker input. Activated by jQuery.fn.wpColorPicker in media.js.
+         *
+         * @param array<string, mixed> $field Field config — supports 'default' for the initial swatch color.
+         * @param string               $value Current hex color (e.g. '#ff0000').
+         * @return void
+         */
+        public function color( $field, $value = '' ): void {
+            printf(
+                '<input class="coltman-color-picker" id="%s" name="%s" type="text" value="%s" data-default-color="%s">',
+                esc_attr( $field['id'] ),
+                esc_attr( $field['id'] ),
+                esc_attr( $value ),
+                esc_attr( isset( $field['default'] ) ? $field['default'] : '#ffffff' )
+            );
+        }
+
+        /**
+         * Echoes a repeatable field set. Each row renders the sub_fields defined in $field['sub_fields'].
+         *
+         * Value is a JSON-encoded array of row objects stored as post meta.
+         * Supported sub-field types: text, email, number, date, url, textarea, select, checkbox, color.
+         *
+         * @param array<string, mixed> $field  Field config — requires 'sub_fields' array.
+         *                                     Each sub_field: ['id' => …, 'label' => …, 'type' => …].
+         * @param string               $value  JSON-encoded rows or empty string.
+         * @return void
+         */
+        public function repeater( $field, $value = '' ): void {
+            $rows       = ( is_string( $value ) && $value !== '' ) ? json_decode( $value, true ) : [];
+            $rows       = is_array( $rows ) ? $rows : [];
+            $sub_fields = isset( $field['sub_fields'] ) ? $field['sub_fields'] : [];
+            $field_id   = $field['id'];
+            ?>
+            <div class="coltman-repeater flex flex-col gap-2 w-full" data-field="<?php echo esc_attr( $field_id ); ?>">
+                <div class="repeater-rows flex flex-col gap-2">
+                    <?php if ( ! empty( $rows ) ) :
+                        foreach ( $rows as $i => $row ) : ?>
+                        <div class="repeater-row flex flex-col gap-2 bg-slate-100 p-4 rounded border border-gray-300" data-index="<?php echo (int) $i; ?>">
+                            <?php $this->repeater_row_header( (int) $i ); ?>
+                            <?php $this->repeater_sub_fields( $sub_fields, $field_id, (int) $i, is_array( $row ) ? $row : [] ); ?>
+                        </div>
+                    <?php endforeach; else : ?>
+                        <div class="repeater-row flex flex-col gap-2 bg-slate-100 p-4 rounded border border-gray-300" data-index="0">
+                            <?php $this->repeater_row_header( 0 ); ?>
+                            <?php $this->repeater_sub_fields( $sub_fields, $field_id, 0, [] ); ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <button type="button" onclick="addRepeaterRow(this)"
+                        class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded cursor-pointer hover:bg-blue-600 min-w-max">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
+                    <?php echo __( 'Add Row', COLTMAN_TEXT_DOMAIN ); ?>
+                </button>
+            </div>
+            <?php
+        }
+
+        private function repeater_row_header( int $index ): void {
+            ?>
+            <div class="flex items-center justify-between gap-2 border-b border-gray-300 pb-3">
+                <span class="text-sm repeater-row-num"><?php printf( __( 'Row %d', COLTMAN_TEXT_DOMAIN ), $index + 1 ); ?></span>
+                <div class="flex gap-2 items-center">
+                    <div class="repeater-drag-handle" title="<?php echo esc_attr( __( 'Drag to reorder', COLTMAN_TEXT_DOMAIN ) ); ?>">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M7 2a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM7 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-3 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm3 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>
+                    </div>
+                    <button type="button" onclick="removeRepeaterRow(this)"
+                            class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-red-500 cursor-pointer rounded hover:bg-red-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="white" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                        <?php echo __( 'Remove', COLTMAN_TEXT_DOMAIN ); ?>
+                    </button>
+                </div>
+            </div>
+            <?php
+        }
+
+        private function repeater_sub_fields( array $sub_fields, string $field_id, int $index, array $row ): void {
+            foreach ( $sub_fields as $sub ) {
+                $sub_id  = $sub['id'];
+                $html_id = $field_id . '_' . $index . '_' . $sub_id;
+                $name    = $field_id . '[' . $index . '][' . $sub_id . ']';
+                $sub_val = isset( $row[ $sub_id ] )    ? (string) $row[ $sub_id ]    :
+                           ( isset( $sub['default'] )  ? (string) $sub['default']    : '' );
+                ?>
+                <div class="flex flex-col gap-1">
+                    <label for="<?php echo esc_attr( $html_id ); ?>" class="text-sm"><?php echo esc_html( $sub['label'] ); ?></label>
+                    <?php $this->repeater_sub_field( $sub, $name, $html_id, $sub_val ); ?>
+                </div>
+                <?php
+            }
+        }
+
+        private function repeater_sub_field( array $sub, string $name, string $html_id, string $value ): void {
+            $type = isset( $sub['type'] ) ? $sub['type'] : 'text';
+            switch ( $type ) {
+                case 'textarea':
+                    printf(
+                        '<textarea class="block w-full regular-text min-h-10" rows="%d" id="%s" name="%s">%s</textarea>',
+                        isset( $sub['rows'] ) ? (int) $sub['rows'] : 3,
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        esc_textarea( $value )
+                    );
+                    break;
+                case 'select':
+                    printf(
+                        '<select class="block w-full regular-text min-h-10" id="%s" name="%s">%s</select>',
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        $this->select_options( $sub, $value )
+                    );
+                    break;
+                case 'checkbox':
+                    printf(
+                        '<label class="rwp-checkbox-label"><input %s id="%s" name="%s" type="checkbox" value="on"> %s</label>',
+                        $value === 'on' ? 'checked' : '',
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        esc_html( isset( $sub['description'] ) ? $sub['description'] : '' )
+                    );
+                    break;
+                case 'color':
+                    printf(
+                        '<input class="coltman-color-picker" id="%s" name="%s" type="text" value="%s" data-default-color="%s">',
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        esc_attr( $value ),
+                        esc_attr( isset( $sub['default'] ) ? $sub['default'] : '#ffffff' )
+                    );
+                    break;
+                case 'media':
+                    echo '<div class="flex items-center justify-between w-full gap-2 min-h-10">';
+                    printf(
+                        '<input class="regular-text block w-full min-h-10" id="%s" name="%s" type="text" value="%s">',
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        esc_attr( $value )
+                    );
+                    printf(
+                        '<button class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" data-modal-button="%s" data-modal-title="%s" data-return="%s" id="%s_button" type="button">%s</button>',
+                        esc_attr( isset( $sub['modal-button'] ) ? $sub['modal-button'] : __( 'Select this file', COLTMAN_TEXT_DOMAIN ) ),
+                        esc_attr( isset( $sub['modal-title'] )  ? $sub['modal-title']  : __( 'Choose a file', COLTMAN_TEXT_DOMAIN ) ),
+                        esc_attr( isset( $sub['return'] )       ? $sub['return']       : 'url' ),
+                        esc_attr( $html_id ),
+                        esc_html( isset( $sub['button-text'] )  ? $sub['button-text']  : __( 'Upload', COLTMAN_TEXT_DOMAIN ) )
+                    );
+                    echo '</div>';
+                    break;
+                default:
+                    printf(
+                        '<input class="regular-text block w-full min-h-10" id="%s" name="%s" type="%s" value="%s"%s>',
+                        esc_attr( $html_id ),
+                        esc_attr( $name ),
+                        esc_attr( in_array( $type, [ 'email', 'number', 'date', 'url' ] ) ? $type : 'text' ),
+                        esc_attr( $value ),
+                        isset( $sub['pattern'] ) ? ' pattern="' . esc_attr( $sub['pattern'] ) . '"' : ''
+                    );
+            }
+        }
+
+        /**
+         * Echoes a relationship select field with real-time AJAX search via Select2.
+         *
+         * Stores selected post IDs as a JSON array (same format as get_posts).
+         * Requires the coltman_relationship_search AJAX action from ajax.php.
+         *
+         * @param array<string, mixed> $field  Field config — requires 'post_type'; supports 'placeholder'.
+         * @param string               $value  JSON-encoded array of selected post IDs.
+         * @return void
+         */
+        public function relationship( $field, $value = '' ): void {
+            $raw_type    = isset( $field['post_type'] ) ? $field['post_type'] : 'post';
+            $post_type   = is_array( $raw_type )
+                ? implode( ',', $raw_type )
+                : implode( ',', array_map( 'trim', explode( ',', $raw_type ) ) );
+            $placeholder = isset( $field['placeholder'] ) ? $field['placeholder'] : __( 'Search posts…', COLTMAN_TEXT_DOMAIN );
+            $selected_ids = [];
+            if ( $value !== '' && $value !== null ) {
+                $decoded = json_decode( $value );
+                if ( is_array( $decoded ) ) {
+                    $selected_ids = $decoded;
+                }
+            }
+            $nonce = wp_create_nonce( 'coltman_relationship' );
+            ?>
+            <select id="<?php echo esc_attr( $field['id'] ); ?>"
+                    name="<?php echo esc_attr( $field['id'] ); ?>[]"
+                    multiple="multiple"
+                    class="block w-full js-relationship-select regular-text min-h-10"
+                    data-post-type="<?php echo esc_attr( $post_type ); ?>"
+                    data-nonce="<?php echo esc_attr( $nonce ); ?>"
+                    data-placeholder="<?php echo esc_attr( $placeholder ); ?>">
+                <?php foreach ( $selected_ids as $post_id ) :
+                    $post = get_post( (int) $post_id );
+                    if ( ! $post ) continue;
+                ?>
+                <option value="<?php echo esc_attr( $post_id ); ?>" selected="selected"><?php echo esc_html( $post->post_title ); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <?php
+        }
+
+
     }
 }

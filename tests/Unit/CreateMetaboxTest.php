@@ -330,6 +330,18 @@ class CreateMetaboxTest extends TestCase
         $this->assertNotEmpty($match);
     }
 
+    public function test_save_post_textarea_preserves_html(): void
+    {
+        $this->withNonce();
+        $_POST['field_textarea'] = '<p>Hello <strong>World</strong></p>';
+        $this->make()->save_post(10);
+
+        $calls = $this->spyCalls('update_post_meta');
+        $match = array_values(array_filter($calls, fn($c) => $c['key'] === 'field_textarea'));
+        $this->assertNotEmpty($match);
+        $this->assertSame('<p>Hello <strong>World</strong></p>', $match[0]['value']);
+    }
+
     public function test_save_post_stores_get_posts_as_json(): void
     {
         $this->withNonce();
@@ -386,5 +398,197 @@ class CreateMetaboxTest extends TestCase
         $calls = $this->spyCalls('update_post_meta');
         $match = array_filter($calls, fn($c) => $c['key'] === 'field_text');
         $this->assertEmpty($match);
+    }
+
+    // ── group type ────────────────────────────────────────────────────────────
+
+    private function makeWithGroup(): \ColtmanCreateMetabox
+    {
+        return new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'g_',
+            'cpt'        => 'post',
+            'class_name' => 'g',
+            'fields'     => [
+                [
+                    'id'     => 'seo_group',
+                    'type'   => 'group',
+                    'label'  => 'SEO',
+                    'fields' => [
+                        ['id' => 'seo_title',       'type' => 'text',     'label' => 'Title'],
+                        ['id' => 'seo_description', 'type' => 'textarea', 'label' => 'Description'],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    public function test_group_save_persists_sub_fields(): void
+    {
+        $_POST['coltman_nonce_g_'] = 'test_nonce';
+        $_POST['seo_title']        = '  My Title  ';
+        $_POST['seo_description']  = "Line 1\nLine 2";
+        $this->makeWithGroup()->save_post(10);
+
+        $calls = $this->spyCalls('update_post_meta');
+        $keys  = array_column($calls, 'key');
+        $this->assertContains('seo_title', $keys);
+        $this->assertContains('seo_description', $keys);
+    }
+
+    public function test_group_save_skips_absent_sub_fields(): void
+    {
+        $_POST['coltman_nonce_g_'] = 'test_nonce';
+        // neither seo_title nor seo_description in POST
+        $this->makeWithGroup()->save_post(10);
+
+        $calls = $this->spyCalls('update_post_meta');
+        $keys  = array_column($calls, 'key');
+        $this->assertNotContains('seo_title', $keys);
+        $this->assertNotContains('seo_description', $keys);
+    }
+
+    // ── register_rest_meta ────────────────────────────────────────────────────
+
+    public function test_rest_meta_registers_fields_with_rest_true(): void
+    {
+        global $_coltman_registered_meta;
+        $_coltman_registered_meta = [];
+
+        $mb = new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'r_',
+            'cpt'        => 'post',
+            'class_name' => 'r',
+            'fields'     => [
+                ['id' => 'seo_title', 'type' => 'text',   'label' => 'SEO Title', 'rest' => true],
+                ['id' => 'content',   'type' => 'textarea','label' => 'Content'],      // no rest
+                ['id' => 'price',     'type' => 'number',  'label' => 'Price',    'rest' => true],
+            ],
+        ]);
+        $mb->register_rest_meta();
+
+        $keys = array_column($_coltman_registered_meta, 'meta_key');
+        $this->assertContains('seo_title', $keys);
+        $this->assertContains('price',     $keys);
+        $this->assertNotContains('content', $keys);
+    }
+
+    public function test_rest_meta_maps_number_type_correctly(): void
+    {
+        global $_coltman_registered_meta;
+        $_coltman_registered_meta = [];
+
+        $mb = new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'r_',
+            'cpt'        => 'post',
+            'class_name' => 'r',
+            'fields'     => [
+                ['id' => 'price', 'type' => 'number', 'label' => 'Price', 'rest' => true],
+                ['id' => 'name',  'type' => 'text',   'label' => 'Name',  'rest' => true],
+            ],
+        ]);
+        $mb->register_rest_meta();
+
+        $byKey = [];
+        foreach ($_coltman_registered_meta as $entry) {
+            $byKey[$entry['meta_key']] = $entry['args'];
+        }
+        $this->assertSame('number', $byKey['price']['type']);
+        $this->assertSame('string', $byKey['name']['type']);
+    }
+
+    public function test_rest_meta_skips_when_no_rest_fields(): void
+    {
+        global $_coltman_registered_meta;
+        $_coltman_registered_meta = [];
+
+        $mb = new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'r_',
+            'cpt'        => 'post',
+            'class_name' => 'r',
+            'fields'     => [
+                ['id' => 'title', 'type' => 'text', 'label' => 'Title'],
+            ],
+        ]);
+        $mb->register_rest_meta();
+
+        $this->assertEmpty($_coltman_registered_meta);
+    }
+
+    public function test_rest_meta_registers_show_in_rest_true(): void
+    {
+        global $_coltman_registered_meta;
+        $_coltman_registered_meta = [];
+
+        $mb = new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'r_',
+            'cpt'        => 'post',
+            'class_name' => 'r',
+            'fields'     => [
+                ['id' => 'bio', 'type' => 'textarea', 'label' => 'Bio', 'rest' => true],
+            ],
+        ]);
+        $mb->register_rest_meta();
+
+        $this->assertCount(1, $_coltman_registered_meta);
+        $this->assertTrue($_coltman_registered_meta[0]['args']['show_in_rest']);
+        $this->assertTrue($_coltman_registered_meta[0]['args']['single']);
+    }
+
+    // ── Map save ─────────────────────────────────────────────────────────────
+
+    private function makeWithMap(): \ColtmanCreateMetabox
+    {
+        return new \ColtmanCreateMetabox([
+            'title'      => 'Test',
+            'prefix'     => 'm_',
+            'cpt'        => 'post',
+            'class_name' => 'm',
+            'fields'     => [
+                ['id' => 'location', 'type' => 'map', 'label' => 'Location'],
+            ],
+        ]);
+    }
+
+    public function test_map_save_persists_valid_coords(): void
+    {
+        $_POST['coltman_nonce_m_'] = 'test_nonce';
+        $_POST['location']         = '{"lat":40.4168,"lng":-3.7038,"zoom":12}';
+        $this->makeWithMap()->save_post(10);
+
+        $calls  = $this->spyCalls('update_post_meta');
+        $match  = array_values(array_filter($calls, fn($c) => $c['key'] === 'location'));
+        $this->assertCount(1, $match);
+        $saved  = json_decode($match[0]['value'], true);
+        $this->assertEqualsWithDelta(40.4168, $saved['lat'], 0.0001);
+        $this->assertEqualsWithDelta(-3.7038, $saved['lng'], 0.0001);
+        $this->assertSame(12, $saved['zoom']);
+    }
+
+    public function test_map_save_rejects_out_of_range_coords(): void
+    {
+        $_POST['coltman_nonce_m_'] = 'test_nonce';
+        $_POST['location']         = '{"lat":200.0,"lng":400.0,"zoom":10}';
+        $this->makeWithMap()->save_post(10);
+
+        $calls = $this->spyCalls('update_post_meta');
+        $keys  = array_column($calls, 'key');
+        $this->assertNotContains('location', $keys);
+    }
+
+    public function test_map_save_clears_value_when_empty_string(): void
+    {
+        $_POST['coltman_nonce_m_'] = 'test_nonce';
+        $_POST['location']         = '';
+        $this->makeWithMap()->save_post(10);
+
+        $calls = $this->spyCalls('update_post_meta');
+        $match = array_values(array_filter($calls, fn($c) => $c['key'] === 'location'));
+        $this->assertCount(1, $match);
+        $this->assertSame('', $match[0]['value']);
     }
 }

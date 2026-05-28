@@ -16,6 +16,8 @@ class UserMetaTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Nonce is verified against user_id=1 in save tests
+        $_POST['coltman_user_meta_nonce'] = 'test_nonce';
 
         $this->config = [
             'title'       => 'Extra User Fields',
@@ -168,6 +170,17 @@ class UserMetaTest extends TestCase
         $match = array_values(array_filter($calls, fn($c) => $c['key'] === 'bio'));
         $this->assertNotEmpty($match);
         $this->assertSame(5, $match[0]['user_id']);
+    }
+
+    public function test_save_textarea_preserves_html(): void
+    {
+        $_POST['bio'] = '<p>Hello <em>World</em></p>';
+        $this->make()->save_user_meta(5);
+
+        $calls = $this->spyCalls('update_user_meta');
+        $match = array_values(array_filter($calls, fn($c) => $c['key'] === 'bio'));
+        $this->assertNotEmpty($match);
+        $this->assertSame('<p>Hello <em>World</em></p>', $match[0]['value']);
     }
 
     public function test_save_sanitizes_email_field(): void

@@ -96,6 +96,10 @@ if (!class_exists('ColtmanTermMeta')) {
                     $meta_value = $field['default'];
                 }
         
+                if ( isset( $field['type'] ) && $field['type'] === 'group' ) {
+                    $html .= $this->wpturbo_render_group( $field_id, $field, '' );
+                    continue;
+                }
                 $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value );
                 $label = "<label for='$field_id'>{$field['label']}</label>";
                 $html .= $this->wpturbo_format_field( $label, $field_html );
@@ -116,6 +120,10 @@ if (!class_exists('ColtmanTermMeta')) {
             $html = '';
             foreach( $this->fields as $field_id => $field ){
                 $meta_value = get_term_meta( $term->term_id, $field_id, true );
+                if ( isset( $field['type'] ) && $field['type'] === 'group' ) {
+                    $html .= $this->wpturbo_render_group( $field_id, $field, $term->term_id );
+                    continue;
+                }
                 $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value );
                 $label = "<label class='font-bold' for='$field_id'>{$field['label']}</label>";
                 $html .= $this->wpturbo_format_field( $label, $field_html );
@@ -143,6 +151,9 @@ if (!class_exists('ColtmanTermMeta')) {
                 wp_enqueue_style( 'coltman-admin', COLTMAN_ASSETS_URL . '/css/admin.css', [], '1.6.0' );
                 wp_enqueue_script( 'select2' );
                 wp_enqueue_script( 'coltman-media', COLTMAN_ASSETS_URL . '/js/media.js', [ 'jquery', 'select2', 'jquery-ui-sortable' ], '1.6.0', true );
+                wp_localize_script( 'coltman-media', 'coltmanVars', [ 'assetsUrl' => COLTMAN_ASSETS_URL ] );
+                wp_enqueue_style( 'leaflet',  COLTMAN_ASSETS_URL . '/libs/leaflet/leaflet.min.css', [], '1.9.4' );
+                wp_enqueue_script( 'leaflet', COLTMAN_ASSETS_URL . '/libs/leaflet/leaflet.min.js', [], '1.9.4', true );
             }
         }
     
@@ -215,6 +226,18 @@ if (!class_exists('ColtmanTermMeta')) {
                 case 'date':
                     $this->coltmanInputs->input_minmax( $field, $field_value );
                     break;
+                case 'color':
+                    $this->coltmanInputs->color( $field, $field_value );
+                    break;
+                case 'repeater':
+                    $this->coltmanInputs->repeater( $field, $field_value );
+                    break;
+                case 'relationship':
+                    $this->coltmanInputs->relationship( $field, $field_value );
+                    break;
+                case 'map':
+                    $this->coltmanInputs->map( $field, $field_value );
+                    break;
                 default:
                     $this->coltmanInputs->input( $field, $field_value );
             }
@@ -222,14 +245,89 @@ if (!class_exists('ColtmanTermMeta')) {
         }
         
         /**
-         * Save the new meta values for our taxonomy.
+         * Renders a group field as a single collapsible card: header with label + toggle,
+         * then each sub-field stacked inside. Each sub-field is dispatched through
+         * wpturbo_render_input_field() and saved with its own meta key.
          *
-         * @since 1.0.0
-         * @access public
-         *
-         * @param int $term_id Term ID.
+         * @param string $group_id  Field ID (used as the collapse target ID).
+         * @param array  $field     Group field configuration.
+         * @param mixed  $term_id   Term ID or empty string (for new-term page).
+         * @return string HTML string.
          */
-        public function wpturbo_save_meta_fields( int $term_id ) : void {
+        private function get_group_schema( string $group_id ): array {
+            $schema = get_option( '_coltman_group_schema_' . $group_id, [] );
+            return is_array( $schema ) ? $schema : [];
+        }
+
+        private function wpturbo_render_group( string $group_id, array $field, $term_id ): string {
+            $gid            = esc_attr( $group_id );
+            $label          = isset( $field['label'] ) ? esc_html( $field['label'] ) : '';
+            $static_fields  = isset( $field['fields'] ) ? $field['fields'] : [];
+            $dynamic_schema = $this->get_group_schema( $group_id );
+            $static_ids     = array_column( $static_fields, 'id' );
+            $nonce          = wp_create_nonce( 'coltman_group_schema' );
+            $html  = '<div class="coltman-group-header">';
+            $html .= '<span class="coltman-group-label">' . $label . '</span>';
+            $html .= '<button type="button" class="coltman-group-toggle" data-group="' . $gid . '" aria-expanded="true">&#9650;</button>';
+            $html .= '</div>';
+            if ( ! empty( $field['description'] ) ) {
+                $html .= '<p class="w-full mb-2 text-sm text-gray-500 description">' . esc_html( $field['description'] ) . '</p>';
+            }
+            $html .= '<div class="coltman-group-body" id="coltman-group-' . $gid . '">';
+            foreach ( $static_fields as $sub_field ) {
+                $sub_id   = $sub_field['id'];
+                $sub_val  = $term_id ? (string) get_term_meta( (int) $term_id, $sub_id, true ) : ( isset( $sub_field['default'] ) ? (string) $sub_field['default'] : '' );
+                $sub_html  = $this->wpturbo_render_input_field( $sub_id, $sub_field, $sub_val );
+                $sub_label = '<label for="' . esc_attr( $sub_id ) . '">' . ( isset( $sub_field['label'] ) ? esc_html( $sub_field['label'] ) : '' ) . '</label>';
+                $html .= '<div class="coltman-group-field-row">' . $sub_label . $sub_html . '</div>';
+            }
+            foreach ( $dynamic_schema as $df ) {
+                if ( in_array( $df['key'], $static_ids, true ) ) continue;
+                $sub = [ 'id' => $df['key'], 'type' => $df['type'], 'label' => $df['label'] ];
+                $dyn_val  = $term_id ? (string) get_term_meta( (int) $term_id, $df['key'], true ) : '';
+                $dyn_html  = $this->wpturbo_render_input_field( $df['key'], $sub, $dyn_val );
+                $dyn_label = '<label for="' . esc_attr( $df['key'] ) . '">' . esc_html( $df['label'] ) . '</label>';
+                $html .= '<div class="coltman-group-field-row" data-dynamic-key="' . esc_attr( $df['key'] ) . '">' . $dyn_label . $dyn_html . '</div>';
+            }
+            $dyn_visible = array_values( array_filter( $dynamic_schema, static fn( $df ) => ! in_array( $df['key'], $static_ids, true ) ) );
+            $fm  = '<div class="coltman-field-manager" data-group="' . $gid . '" data-nonce="' . esc_attr( $nonce ) . '">';
+            $fm .= '<div class="coltman-field-manager-toggle-row">';
+            $fm .= '<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; ' . esc_html__( 'Manage fields', COLTMAN_TEXT_DOMAIN ) . '</button>';
+            $fm .= '</div>';
+            $fm .= '<div class="coltman-field-manager-panel" style="display:none">';
+            $fm .= '<div class="coltman-dynamic-fields-list">';
+            if ( empty( $dyn_visible ) ) {
+                $fm .= '<p class="coltman-no-dynamic-fields">' . esc_html__( 'No dynamic fields added yet.', COLTMAN_TEXT_DOMAIN ) . '</p>';
+            } else {
+                foreach ( $dyn_visible as $df ) {
+                    $fm .= '<div class="coltman-dynamic-field-item" data-key="' . esc_attr( $df['key'] ) . '">';
+                    $fm .= '<span class="coltman-dynamic-field-info">' . esc_html( $df['type'] ) . ' &middot; ' . esc_html( $df['label'] ) . ' <code>' . esc_html( $df['key'] ) . '</code></span>';
+                    $fm .= '<button type="button" class="coltman-remove-dynamic-field" data-key="' . esc_attr( $df['key'] ) . '">&#10005;</button>';
+                    $fm .= '</div>';
+                }
+            }
+            $fm .= '</div>';
+            $fm .= '<div class="coltman-add-field-form">';
+            $fm .= '<select class="coltman-new-field-type">';
+            $fm .= '<option value="text">'   . esc_html__( 'Text',     COLTMAN_TEXT_DOMAIN ) . '</option>';
+            $fm .= '<option value="textarea">' . esc_html__( 'Textarea', COLTMAN_TEXT_DOMAIN ) . '</option>';
+            $fm .= '<option value="number">'  . esc_html__( 'Number',   COLTMAN_TEXT_DOMAIN ) . '</option>';
+            $fm .= '<option value="email">'   . esc_html__( 'Email',    COLTMAN_TEXT_DOMAIN ) . '</option>';
+            $fm .= '<option value="url">URL</option>';
+            $fm .= '</select>';
+            $fm .= '<input type="text" class="coltman-new-field-key" placeholder="' . esc_attr__( 'field_key', COLTMAN_TEXT_DOMAIN ) . '">';
+            $fm .= '<input type="text" class="coltman-new-field-label" placeholder="' . esc_attr__( 'Field Label', COLTMAN_TEXT_DOMAIN ) . '">';
+            $fm .= '<button type="button" class="coltman-add-dynamic-field">+ ' . esc_html__( 'Add field', COLTMAN_TEXT_DOMAIN ) . '</button>';
+            $fm .= '</div>';
+            $fm .= '<p class="coltman-field-manager-note">' . esc_html__( '* Dynamic fields apply to all terms with this group.', COLTMAN_TEXT_DOMAIN ) . '</p>';
+            $fm .= '</div>';
+            $fm .= '</div>';
+            $html .= $fm;
+            $html .= '</div>';
+            return $html;
+        }
+
+                public function wpturbo_save_meta_fields( int $term_id ) : void {
             if ( ! current_user_can( 'manage_categories' ) ) return;
 
             foreach ( $this->fields as $field_id => $field ) {
@@ -240,7 +338,7 @@ if (!class_exists('ColtmanTermMeta')) {
                         $sanitized = sanitize_email( $_POST[ $field_id ] );
                         break;
                     case 'textarea':
-                        $sanitized = sanitize_textarea_field( $_POST[ $field_id ] );
+                        $sanitized = wp_kses_post( $_POST[ $field_id ] );
                         break;
                     case 'media':
                     case 'url':
@@ -250,6 +348,79 @@ if (!class_exists('ColtmanTermMeta')) {
                     case 'accordion':
                         $sanitized = $_POST[ $field_id ];
                         break;
+                    case 'color':
+                        $sanitized = sanitize_text_field( $_POST[ $field_id ] );
+                        break;
+                    case 'map':
+                        if ( isset( $_POST[ $field_id ] ) && $_POST[ $field_id ] !== '' ) {
+                            $raw   = json_decode( wp_unslash( $_POST[ $field_id ] ), true );
+                            $lat   = isset( $raw['lat'] )  ? (float) $raw['lat']  : null;
+                            $lng   = isset( $raw['lng'] )  ? (float) $raw['lng']  : null;
+                            $mzoom = isset( $raw['zoom'] ) ? (int)   $raw['zoom'] : 13;
+                            if ( $lat !== null && $lat >= -90 && $lat <= 90 && $lng !== null && $lng >= -180 && $lng <= 180 ) {
+                                update_term_meta( $term_id, $field_id, wp_json_encode( [ 'lat' => $lat, 'lng' => $lng, 'zoom' => $mzoom ] ) );
+                            }
+                        } else {
+                            update_term_meta( $term_id, $field_id, '' );
+                        }
+                        continue 2;
+                    case 'relationship':
+                        $sanitized = json_encode( (array) $_POST[ $field_id ] );
+                        break;
+                    case 'repeater':
+                        if ( ! is_array( $_POST[ $field_id ] ) ) continue 2;
+                        $rows = [];
+                        foreach ( $_POST[ $field_id ] as $row ) {
+                            if ( ! is_array( $row ) ) continue;
+                            $clean = [];
+                            foreach ( isset( $field['sub_fields'] ) ? $field['sub_fields'] : [] as $sub ) {
+                                $sub_val = isset( $row[ $sub['id'] ] ) ? $row[ $sub['id'] ] : '';
+                                switch ( isset( $sub['type'] ) ? $sub['type'] : 'text' ) {
+                                    case 'email':    $clean[ $sub['id'] ] = sanitize_email( (string) $sub_val );         break;
+                                    case 'textarea': $clean[ $sub['id'] ] = wp_kses_post( (string) $sub_val ); break;
+                                    case 'url':      $clean[ $sub['id'] ] = esc_url_raw( (string) $sub_val );             break;
+                                    default:         $clean[ $sub['id'] ] = sanitize_text_field( (string) $sub_val );
+                                }
+                            }
+                            if ( array_filter( $clean ) ) $rows[] = $clean;
+                        }
+                        $sanitized = json_encode( $rows );
+                        break;
+                    case 'get_terms':
+                        $is_multiple = ! ( isset( $field['multiple'] ) && ! $field['multiple'] );
+                        if ( $is_multiple ) {
+                            $sanitized = json_encode( isset( $_POST[ $field_id ] ) ? (array) $_POST[ $field_id ] : [] );
+                        } else {
+                            $sanitized = isset( $_POST[ $field_id ] ) ? sanitize_text_field( $_POST[ $field_id ] ) : '';
+                        }
+                        break;
+                    case 'group':
+                        $all_sub_fields = isset( $field['fields'] ) ? $field['fields'] : [];
+                        $dyn_schema     = $this->get_group_schema( $field_id );
+                        $static_sub_ids = array_column( $all_sub_fields, 'id' );
+                        foreach ( $dyn_schema as $df ) {
+                            if ( ! in_array( $df['key'], $static_sub_ids, true ) ) {
+                                $all_sub_fields[] = [ 'id' => $df['key'], 'type' => $df['type'], 'label' => $df['label'] ];
+                            }
+                        }
+                        foreach ( $all_sub_fields as $sub_field ) {
+                            $sub_id  = $sub_field['id'];
+                            $sub_val = isset( $_POST[ $sub_id ] ) ? $_POST[ $sub_id ] : null;
+                            if ( $sub_val === null ) continue;
+                            switch ( isset( $sub_field['type'] ) ? $sub_field['type'] : 'text' ) {
+                                case 'textarea':    $sv = wp_kses_post( $sub_val ); break;
+                                case 'email':       $sv = sanitize_email( (string) $sub_val ); break;
+                                case 'url':         $sv = esc_url_raw( (string) $sub_val ); break;
+                                case 'editor':      $sv = wp_filter_post_kses( (string) $sub_val ); break;
+                                case 'get_posts':
+                                case 'relationship': $sv = is_array( $sub_val ) ? json_encode( $sub_val ) : '[]'; break;
+                                case 'get_terms':   $sv = ! empty( $sub_field['multiple'] ) && is_array( $sub_val ) ? json_encode( $sub_val ) : sanitize_text_field( (string) $sub_val ); break;
+                                default:             $sv = sanitize_text_field( (string) $sub_val );
+                            }
+                            update_term_meta( $term_id, $sub_id, $sv );
+                        }
+                        continue 2;
+
                     default:
                         $sanitized = sanitize_text_field( $_POST[ $field_id ] );
                 }

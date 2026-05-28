@@ -50,8 +50,11 @@ function _n(string $single, string $plural, int $number, string $domain = ''): s
 function esc_html__(string $text, string $domain = ''): string { return htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
 
 // ── Escaping ──────────────────────────────────────────────────────────────────
-function esc_attr($text): string { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
-function esc_html($text): string { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
+function esc_attr($text): string      { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
+function esc_attr_e(string $text, string $domain = ''): void { echo htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
+function esc_html_e(string $text, string $domain = ''): void { echo htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
+function esc_attr__(string $text, string $domain = ''): string { return htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
+function esc_html($text): string      { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
 function esc_url($url): string   { return filter_var((string) $url, FILTER_SANITIZE_URL) ?: ''; }
 function esc_url_raw($url): string { return (string) $url; }
 function esc_textarea($text): string { return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8'); }
@@ -148,6 +151,11 @@ function get_post($post = null, string $output = 'OBJECT', string $filter = 'raw
     _coltman_spy('get_post', compact('post'));
     return _coltman_stub('get_post', null);
 }
+function get_term($term, string $taxonomy = '', string $output = 'OBJECT', string $filter = 'raw') {
+    _coltman_spy('get_term', compact('term'));
+    return _coltman_stub('get_term', null);
+}
+function is_wp_error($thing): bool { return false; }
 function get_the_content($more_link_text = null, bool $strip_teaser = false): string {
     return _coltman_stub('get_the_content', '');
 }
@@ -188,3 +196,30 @@ function wp_normalize_path(string $path): string { return str_replace('\\', '/',
 function get_theme_root(): string { return '/var/www/html/themes'; }
 function determine_locale(): string { return 'en_US'; }
 function load_textdomain(string $domain, string $mofile): bool { return true; }
+function wp_unslash(mixed $value): mixed { return is_string($value) ? stripslashes($value) : $value; }
+function wp_kses_post(string $data): string { return $data; }
+
+// Gutenberg / REST API stubs
+$_coltman_registered_meta = [];
+function register_post_meta(string $post_type, string $meta_key, array $args = []): bool {
+    global $_coltman_registered_meta;
+    $_coltman_registered_meta[] = [ 'post_type' => $post_type, 'meta_key' => $meta_key, 'args' => $args ];
+    return true;
+}
+function get_current_screen(): ?object {
+    return null;
+}
+function wp_localize_script(string $handle, string $object_name, array $l10n): bool { return true; }
+function wp_json_encode(mixed $data, int $flags = 0, int $depth = 512): string|false { return json_encode($data, $flags, $depth); }
+
+// Options API stubs used by get_group_schema()
+$_coltman_options = [];
+function get_option(string $key, $default = false): mixed {
+    global $_coltman_options;
+    return $_coltman_options[$key] ?? $default;
+}
+function update_option(string $key, mixed $value, bool|string $autoload = true): bool {
+    global $_coltman_options;
+    $_coltman_options[$key] = $value;
+    return true;
+}

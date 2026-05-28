@@ -87,6 +87,7 @@
                 <p class="description"><?php echo esc_html( $this->config['description'] ); ?></p>
             <?php endif; ?>
 
+            <?php wp_nonce_field( 'coltman_user_meta_save_' . $user->ID, 'coltman_user_meta_nonce' ); ?>
             <table class="form-table">
                 <tbody>
                 <?php
@@ -215,7 +216,10 @@
          * @param int $user_id ID del usuario.
          */
         public function save_user_meta( $user_id ) {
-            // Verificar permisos (opcional pero recomendado)
+            if ( ! isset( $_POST['coltman_user_meta_nonce'] ) ||
+                 ! wp_verify_nonce( $_POST['coltman_user_meta_nonce'], 'coltman_user_meta_save_' . $user_id ) ) {
+                return false;
+            }
             if ( ! current_user_can( 'edit_user', $user_id ) ) {
                 return false;
             }
@@ -243,7 +247,7 @@
                         $value = sanitize_email( $value );
                         break;
                     case 'textarea':
-                        $value = sanitize_textarea_field( $value );
+                        $value = wp_kses_post( $value );
                         break;
                     case 'url':
                         $value = esc_url_raw( $value );

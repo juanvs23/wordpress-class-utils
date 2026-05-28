@@ -6,6 +6,196 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.13.0] — 2026-05-28
+
+### Mejoras visuales — componente `gallery`
+- **Rediseño completo del componente** (`input-fields.php`, `admin.css`, `media.js`) — layout tipo card por ítem en lugar de filas planas.
+- **Miniatura en tiempo real** — `<img class="coltman-gallery-thumb">` de 60×60 con `object-fit:cover`. Muestra placeholder SVG cuando no hay imagen; se actualiza al escribir la URL manualmente o al seleccionar desde el media picker. El clonado de ítems limpia la miniatura correctamente.
+- **Botón eliminar compacto** — icono ✕ en gris que pasa a rojo en hover; elimina los botones de texto grandes.
+- **Footer separado** — zona `coltman-gallery-footer` con fondo `#f9f9f9` y separador visual que contiene el botón "Add image".
+- **Sort placeholder** — azul punteado coherente con accordion y repeater.
+- **Clases renombradas** — `div.gallery` → `div.coltman-gallery`; botones usan `.button` estándar de WP en lugar de clases Tailwind de color.
+- Sin cambio en el formato JSON ni en la lógica de guardado.
+
+---
+
+## [1.12.0] — 2026-05-28
+
+### Agregado — mejoras al componente `gallery`
+- **Alt text editable** por ítem — `<input class="image-alt">` debajo del URL. Pre-rellena con `attachment.alt` del media picker (sin sobrescribir si el usuario ya escribió algo). Sincronización inmediata con el JSON oculto vía evento `input/change`.
+- **Drag & drop para reordenar** — jQuery UI Sortable sobre `.gallery-sortable` con handle `.gallery-drag-handle`. Al soltar, reconstruye el array JSON en el nuevo orden leyendo `data-item` de cada ítem DOM. `addiTemImage()` llama `sortable('refresh')` al añadir un ítem.
+- **Backward compat** — el campo `alt` ya existía en el JSON (`attachment.alt`); proyectos previos cargan sin cambio. Formato `gallery-data` idéntico.
+
+### Mejoras al componente `wysiwyg` / `accordion_editor`
+- **Estado activo en botones** — evento `selectionchange` + `document.queryCommandState()` añade `.is-active` a Bold / Italic / Underline / Strikethrough según el formato del cursor.
+- **Selector de headings** — `<select class="coltman-wysiwyg-headings">` con opciones Normal / H2 / H3 / H4. Ejecuta `formatBlock` al cambiar; se sincroniza con el tag de bloque bajo el cursor.
+- **Botón Strikethrough** añadido a la toolbar.
+- **Normalizador de Enter** — `execCommand('defaultParagraphSeparator', false, 'p')` global + handler `keydown` que intercepta Enter fuera de listas y ejecuta `insertParagraph`, evitando que Chrome inserte `<div>`.
+- **Sanitizador de paste** — handler `paste` que extrae el HTML del portapapeles, elimina `<style>`, `<script>`, elementos de namespace Office (`<o:p>`, `<w:*>`), comentarios condicionales de Word y atributos `style=` inline. Conserva `<div>`, `<table>`, `<br>` y todos los tags estructurales.
+
+### Cambiado
+- **`get_terms` — `multiple` por defecto** — `$multiple` pasa de `! empty($field['multiple'])` a `! (isset($field['multiple']) && !$field['multiple'])`. El campo es multiple a menos que se declare `'multiple' => false` explícitamente. Backward compat: valores previos guardados como string simple se pre-cargan correctamente vía fallback en el render.
+- **`textarea` acepta HTML** — `sanitize_textarea_field()` reemplazado por `wp_kses_post()` en los 8 puntos de guardado (`save_post`, group sub-fields, repeater sub-fields en metabox y termeta; `save_user_meta`). Permite `<p>`, `<strong>`, `<table>`, `<div>`, etc. El render con `esc_textarea()` no cambia.
+
+### Tests
+- Stubs añadidos: `esc_html_e()`, `esc_attr__()`, `wp_kses_post()`.
+- Tests actualizados para nuevas aserciones de comportamiento.
+- **253 tests / 464 assertions** — todos pasan.
+
+---
+
+## [1.11.1] — 2026-05-28
+
+### Corregido — vulnerabilidades de seguridad (XSS + CSRF)
+
+#### XSS — salida sin escapar en `input-fields.php`
+- **`input()`** — `$value`, `$field['id']`, `$field['class']`, `$field['pattern']` ahora con `esc_attr()`. Atributos `pattern`, `min`, `max`, `step` cambiados de comillas simples a dobles (`esc_attr()`).
+- **`input_minmax()`** — `$value` y todos los atributos numéricos con `esc_attr()`.
+- **`textarea()`** — `$value` con `esc_textarea()`; `placeholder` e `id`/`name` con `esc_attr()`.
+- **`checkbox()`** — `$field['id']` con `esc_attr()`; `$field['description']` con `esc_html()`.
+- **`gallery_input()`** — `$item->item`, `$item->url`, `$modal_button`, `$modal_title`, `$return`, `$text_button` con `esc_attr()` / `esc_html()`. `json_encode($value)` con `esc_attr()`.
+
+#### XSS — salida sin escapar en `class-metabox.php`
+- **`label()`** — `$field['label']` con `esc_html()`; `$field['id']` con `esc_attr()` en los tres casos del switch.
+- **`description()`** — `$field['description']` con `esc_html()`.
+- **Config description** en el header del metabox con `esc_html()`.
+
+#### Datos sin sanitizar en `class-metabox.php`
+- **`case 'checkbox':` en `save_post()`** — valor raw reemplazado por `sanitize_text_field()`.
+
+#### CSRF — falta de nonce en `class-usermetabox.php`
+- `add_user_meta_section()` ahora emite `wp_nonce_field('coltman_user_meta_save_{user_id}', 'coltman_user_meta_nonce')`.
+- `save_user_meta()` verifica el nonce con `wp_verify_nonce()` antes de cualquier guardado. Se eliminó el comentario "opcional pero recomendado" que era incorrecto.
+
+### Tests
+- Stubs añadidos: `wp_unslash()`, `wp_json_encode()`, `register_post_meta()`, `get_current_screen()`, `wp_localize_script()`.
+- `UserMetaTest::setUp()` inyecta el nonce en `$_POST` para que todos los tests existentes sigan pasando.
+- Tests de `input_minmax` actualizados a comillas dobles (`min="0"`, `max="100"`, `step="0.5"`).
+
+---
+
+## [1.11.0] — 2026-05-28
+
+### Agregado — Fase 4: soporte para el editor de bloques (Gutenberg)
+
+#### 4.1 — Registro de meta en la REST API (`show_in_rest`)
+- **`register_rest_meta(): void`** en `ColtmanCreateMetabox` — nuevo método público llamado en el hook `init`. Itera los campos del metabox y llama a `register_post_meta()` para cada campo que tenga `'rest' => true`. Parámetros registrados: `show_in_rest: true`, `single: true`, tipo REST mapeado por `rest_field_type()`, `auth_callback` con `current_user_can('edit_posts')`.
+- **`rest_field_type(string $type): string`** — privado. Devuelve `'number'` para campos `number`, `'string'` para todos los demás.
+- **Hook `init`** añadido al constructor junto a `enqueue_block_editor_assets`.
+
+  **Uso:**
+  ```php
+  ['id' => 'seo_title', 'type' => 'text', 'label' => 'SEO Title', 'rest' => true]
+  ```
+
+#### 4.2 — Panel lateral en Gutenberg (`PluginDocumentSettingPanel`)
+- **`enqueue_gutenberg_panel(): void`** en `ColtmanCreateMetabox` — hook `enqueue_block_editor_assets`. Solo actúa si la pantalla actual coincide con uno de los CPTs del metabox y hay al menos un campo `rest: true`. Encola `assets/js/gutenberg-panel.js` con dependencias `wp-plugins`, `wp-edit-post`, `wp-element`, `wp-components`, `wp-data`. Pasa las definiciones de campos y el título del panel via `wp_localize_script` como `window.coltmanGutenbergData`.
+- **`assets/js/gutenberg-panel.js`** — componente `ColtmanPanel` registrado con `wp.plugins.registerPlugin`. Usa `wp.data.useSelect` para leer meta del store `core/editor` y `useDispatch.editPost` para escribir. Tipos soportados con control interactivo: `text`, `email`, `url`, `number`, `date`, `color`, `textarea`, `select`, `checkbox`. Tipos complejos (`gallery`, `accordion`, `repeater`, `relationship`, `get_posts`, `get_terms`, `group`, `map`) se muestran como `wp.components.Notice` informativo — se editan en el metabox clásico y son accesibles desde la REST API.
+- **Sin proceso de build** — usa `wp.element.createElement` directamente, compatible con cualquier tema clásico sin webpack/Babel.
+
+### Compatibilidad con classic themes
+Ambas funcionalidades son **completamente aditivas**: en un classic theme sin el editor de bloques activo, los hooks se registran pero no tienen efecto visible. Los metaboxes clásicos siguen funcionando exactamente igual.
+
+### Tests
+- **4 nuevos en `CreateMetaboxTest`** — registro de campos `rest: true`, mapeo de tipo `number`, omisión cuando no hay campos REST, verificación de `show_in_rest: true` y `single: true`.
+- Stubs añadidos: `register_post_meta()`, `get_current_screen()`, `wp_localize_script()`.
+- **Total: 250 tests / 457 assertions** — todos pasan.
+
+---
+
+## [1.10.0] — 2026-05-28
+
+### Agregado — campo `map` (selector de coordenadas con Leaflet)
+
+- **`ColtmanInputFields::map()`** (`input-fields.php`) — renderiza un `<input type="hidden">` (guarda el JSON final), dos inputs readonly de lat/lng, botón "Clear" y un `<div.coltman-map-container>` con atributos `data-field`, `data-lat`, `data-lng`, `data-zoom`. Parámetros de configuración: `provider` (actualmente solo `leaflet`), `zoom` (nivel por defecto cuando no hay valor almacenado).
+- **Leaflet 1.9.4 local** — `assets/libs/leaflet/leaflet.min.css` (11 KB), `leaflet.min.js` (145 KB) y las tres imágenes del marcador en `assets/libs/leaflet/images/`. Sin dependencia de CDN externo.
+- **`case 'map':` en `field()` y `save_post()`** (`class-metabox.php`) — renderizado delegado a `ColtmanInputFields::map()`; guardado con `wp_json_encode` tras validar que `lat ∈ [-90, 90]` y `lng ∈ [-180, 180]`. Si el campo está vacío se limpia la meta key.
+- **`case 'map':` en `wpturbo_render_input_field()` y `wpturbo_save_meta_fields()`** (`class-termeta.php`) — misma lógica para term-meta.
+- **Enqueue en `admin_enqueue_scripts()`** (metabox y termeta) — `wp_enqueue_style('leaflet')`, `wp_enqueue_script('leaflet')` y `wp_localize_script('coltman-media', 'coltmanVars', ['assetsUrl' => COLTMAN_ASSETS_URL])`.
+- **`coltmanLeafletIcon()` y `coltmanInitMap()`** (`media.js`) — inicialización completa del mapa: OpenStreetMap tiles, marcador draggable, click-para-colocar, sincronización de lat/lng/zoom al `<input hidden>`, botón Clear. La función `coltmanLeafletIcon()` elimina `L.Icon.Default.prototype._getIconUrl` y crea un `L.icon({...})` explícito con rutas absolutas desde `coltmanVars.assetsUrl` para evitar que Leaflet intente auto-detectar las rutas desde el CSS (causa raíz de los iconos rotos).
+- **CSS** (`admin.css`) — sección "Map": `.coltman-map-wrap`, `.coltman-map-coords`, `.coltman-map-coord-label`, `.coltman-map-container` (350 px de altura).
+- **Stubs** (`tests/Stubs/wordpress.php`) — añadidos `wp_unslash()` y `wp_json_encode()`.
+
+### Modelo de datos
+Guarda `{"lat": 40.4168, "lng": -3.7038, "zoom": 12}` en una sola meta key. Lectura en frontend: `json_decode(get_post_meta($id, 'campo', true), true)`.
+
+### Tests
+- **6 nuevos en `InputFieldsTest`** — hidden input con valor, container con data-attributes, valores vacíos, inputs readonly, botón Clear, zoom por defecto desde config.
+- **3 nuevos en `CreateMetaboxTest`** — save coords válidas, rechazo de coordenadas fuera de rango, limpieza con cadena vacía.
+- **Total: 246 tests / 448 assertions** — todos pasan.
+
+---
+
+## [1.9.0] — 2026-05-28
+
+### Agregado — campo `group` con constructor de campos dinámicos
+
+- **`get_group_schema()` en `class-metabox.php` y `class-termeta.php`** — método privado que lee el esquema de sub-campos dinámicos desde `wp_options` bajo la clave `_coltman_group_schema_{group_id}`. Devuelve `[]` si no existe o si el valor no es un array.
+- **Panel "Manage fields"** en el footer de cada grupo — al pie del `div.coltman-group-body` aparece un botón ⚙ que abre un panel colapsable con:
+  - Lista de campos dinámicos actuales (tipo · etiqueta `clave`) con botón ✕ por cada uno.
+  - Formulario "Add field": selector de tipo (`text`, `textarea`, `number`, `email`, `url`), input de clave (solo `[a-z0-9_]`) e input de etiqueta.
+- **AJAX `coltman_add_group_field`** (`ajax.php`) — añade un campo al esquema en `wp_options`. Valida nonce (`coltman_group_schema`), capacidad `manage_options`, tipos permitidos y unicidad de clave.
+- **AJAX `coltman_remove_group_field`** (`ajax.php`) — elimina un campo del esquema por clave. Mismo nonce y capacidad.
+- **JS en `media.js`** — tres handlers delegados en `body`: toggle del panel, añadir campo (POST AJAX + inyección de fila sin recargar), eliminar campo (confirmación + POST AJAX + limpieza DOM). Helper `coltmanBuildFieldRow(type, key, label)` genera el HTML del nuevo input.
+- **CSS en `admin.css`** — sección "Group Field Manager" con `.coltman-field-manager`, `.coltman-field-manager-panel`, `.coltman-dynamic-field-item`, `.coltman-add-field-form`, `.coltman-add-dynamic-field`, `.coltman-field-manager-note`, etc.
+- **Stubs `get_option` / `update_option`** en `tests/Stubs/wordpress.php` para tests unitarios sin WP.
+
+### Cambiado
+- **`save_post()` / `wpturbo_save_meta_fields()` case `'group'`** — fusionan `$field['fields']` (estáticos, prioridad por clave) + esquema dinámico de `wp_options` antes de iterar y guardar. Los valores siguen en meta keys individuales.
+- **`group_field()` / `wpturbo_render_group()`** — renderizan campos dinámicos con `data-dynamic-key` después de los estáticos, seguidos del panel `.coltman-field-manager` al final del cuerpo del grupo.
+
+### Modelo de datos
+- **Esquema** (definición de campos) → `wp_options` `_coltman_group_schema_{id}`, global para todos los posts/términos con ese grupo.
+- **Valores** → meta keys individuales, igual que los campos estáticos.
+
+### Tests
+- **237 tests / 423 assertions** — todos pasan.
+
+---
+
+## [1.8.0] — 2026-05-27
+
+### Cambiado — campo `group` (visual mejorado)
+- **`group_field()` en `class-metabox.php`** — rediseñado como una **única `<tr>`**: el título del grupo + botón de colapso queda en la columna `<th>` (izquierda), y todos los sub-campos apilados en la `<td>` (derecha). Antes cada sub-campo generaba su propio `<tr>`, lo que mezclaba los campos del grupo con los campos normales del metabox.
+- **`wpturbo_render_group()` en `class-termeta.php`** — mismo rediseño para term-meta: cabecera con label + toggle, cuerpo colapsable con sub-campos apilados dentro de un `div.coltman-group-body`.
+- **`admin.css`** — estilos de grupo actualizados para la nueva disposición: `.coltman-group-header` (flex, borde azul inferior), `.coltman-group-label`, `.coltman-group-toggle` (hover azul), `.coltman-group-body` (flex column, gap), `.coltman-group-field-row`.
+- **`media.js`** — toggle de colapso actualizado para usar `#coltman-group-{id}` como target (el `div.coltman-group-body` dentro de la `<td>`).
+- Sub-campos siguen guardándose en sus propias meta keys individuales (sin cambio de modelo de datos).
+- **`media` en `repeater_sub_field()`** — tipo `media` añadido al switch de sub-campos, disponible en `repeater` y como sub-campo de `group`. Renderiza `<input type="text">` + botón `.rwp-media-toggle`.
+
+### También incluido en v1.8.0
+- **`get_posts` delega en `relationship`** — one-liner; mantiene API pública y hereda AJAX, paginación, multi-`post_type`.
+- **Multi-`post_type` en `relationship`/`get_posts`** — acepta string, CSV o array.
+- **`get_terms` mejorado** — Select2 AJAX (`coltman_term_search`), `multiple`, multi-taxonomy, paginación.
+- **Campo `wysiwyg` eliminado** — usar `type: 'editor'` directamente.
+
+### Tests
+- **237 tests / 423 assertions** — todos pasan sin cambios en la suite (los cambios son de renderizado PHP/CSS/JS, sin impacto en el modelo de datos).
+
+---
+
+## [1.7.0] — 2026-05-27
+
+### Agregado
+- **Campo `repeater`** (`ColtmanInputFields::repeater()`) — sub-campos configurables por fila (JSON en post meta). Tipos de sub-campo soportados: `text`, `textarea`, `select`, `checkbox`, `color`, `email`, `url`. Filas drag-and-drop (jQuery UI Sortable). JS `addRepeaterRow()` / `removeRepeaterRow()` en `media.js`. Estilos `.repeater-drag-handle` y `.repeater-sort-placeholder` en `admin.css`. Sanitización por tipo de sub-campo en `save_post()` y `wpturbo_save_meta_fields()` (Fase 3.1).
+- **Campo `color`** (`ColtmanInputFields::color()`) — `<input type="text">` con clase `coltman-color-picker` e inicialización automática de `wp-color-picker` en `$(document).ready`. Atributo `data-default-color` configurable en la definición del campo. Sanitización con `sanitize_text_field()` (Fase 3.2).
+- **Campo `relationship`** (`ColtmanInputFields::relationship()`) — `<select multiple>` con búsqueda AJAX en tiempo real vía Select2. Nonce `coltman_relationship` embebido en `data-nonce`. Handler AJAX `wp_ajax_coltman_relationship_search` en `ajax.php` (nuevo archivo). Devuelve resultados paginados (20 por página). Pre-popula opciones seleccionadas desde JSON al renderizar. Sanitización: `json_encode` del array de IDs enteros (Fase 3.3).
+- **Campo `wysiwyg`** (`ColtmanInputFields::wysiwyg()`) — alias de `ColtmanInputFields::editor()`. Compatibilidad con desarrolladores que vienen de ACF (Fase 3.4).
+- **`classes/ajax.php`** — archivo nuevo para handlers AJAX del framework. Requerido desde `class.php`. Actualmente contiene `coltman_relationship_search`.
+- **`admin.css`** ampliado con estilos del repeater: `.repeater-drag-handle`, `.repeater-drag-handle:hover`, `.repeater-drag-handle:active`, `.repeater-sort-placeholder`.
+
+### Cambiado
+- **`media.js`** — añadidos: inicialización de Select2 AJAX para `.js-relationship-select`, inicialización de `wp-color-picker` para `.coltman-color-picker`, Sortable para `.coltman-repeater .repeater-rows` con renumeración de índices al reordenar.
+- **`class-metabox.php` / `class-termeta.php`** — `field()` / `wpturbo_render_input_field()` y los métodos `save_post()` / `wpturbo_save_meta_fields()` ampliados con los 4 nuevos tipos (`wysiwyg`, `color`, `relationship`, `repeater`).
+- **`class.php`** — añadido `require __DIR__ . '/ajax.php'` en la lista de requires.
+
+### Tests
+- **232 tests / 409 assertions** — todos pasan.
+- `InputFieldsTest`: 14 nuevos tests (2 `wysiwyg`, 3 `color`, 6 `repeater`, 4 `relationship`).
+- `tests/Stubs/wordpress.php`: añadida función `esc_attr_e()`.
+
+---
+
 ## [1.6.0] — 2026-05-27
 
 ### Agregado

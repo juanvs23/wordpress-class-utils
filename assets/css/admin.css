@@ -134,12 +134,19 @@
 .coltman-wysiwyg-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; padding: 4px 8px; background: #f6f7f7; border-bottom: 1px solid #c3c4c7; }
 .coltman-wysiwyg-btn { padding: 2px 7px; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; font-size: 13px; line-height: 1.6; color: #1d2327; }
 .coltman-wysiwyg-btn:hover { background: #fff; border-color: #8c8f94; }
+.coltman-wysiwyg-btn.is-active { background: #e5e7eb; border-color: #9ca3af; color: #1d2327; }
 .coltman-wysiwyg-sep { width: 1px; height: 18px; background: #c3c4c7; margin: 0 3px; flex-shrink: 0; }
+.coltman-wysiwyg-headings { font-size: 12px; padding: 2px 4px; border: 1px solid #c3c4c7; border-radius: 3px; background: #fff; cursor: pointer; color: #1d2327; height: 24px; }
+.coltman-wysiwyg-headings:focus { outline: 1px solid #2271b1; border-color: #2271b1; }
 .coltman-wysiwyg-body { min-height: 100px; padding: 8px 12px; outline: none; font-size: 14px; line-height: 1.6; }
 .coltman-wysiwyg-body:focus { box-shadow: inset 0 0 0 1px #2271b1; }
 .coltman-wysiwyg-body p { margin: 0 0 0.5em; }
+.coltman-wysiwyg-body h2 { font-size: 1.4em; font-weight: 600; margin: 0.6em 0 0.3em; }
+.coltman-wysiwyg-body h3 { font-size: 1.2em; font-weight: 600; margin: 0.5em 0 0.25em; }
+.coltman-wysiwyg-body h4 { font-size: 1em; font-weight: 700; margin: 0.5em 0 0.25em; }
 .coltman-wysiwyg-body ul, .coltman-wysiwyg-body ol { margin: 0 0 0.5em 1.5em; }
 .coltman-wysiwyg-body a { color: #2271b1; text-decoration: underline; }
+.coltman-wysiwyg-body s { text-decoration: line-through; }
 
 /* ── Accordion ──────────────────────────────────────────────────────────── */
 
@@ -147,3 +154,94 @@
 .accordion-drag-handle:hover { color: #1d2327; background: rgba(0,0,0,0.06); }
 .accordion-drag-handle:active { cursor: grabbing; }
 .accordion-sort-placeholder { background: #e5e7eb; border: 2px dashed #9ca3af; border-radius: 4px; min-height: 60px; }
+
+/* ── Group ──────────────────────────────────────────────────────────────── */
+
+.coltman-group-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-bottom: 2px solid #2271b1; padding-bottom: 6px; margin-bottom: 10px; }
+.coltman-group-label { font-size: 0.85rem; font-weight: 600; color: #1d2327; letter-spacing: 0.03em; text-transform: uppercase; }
+.coltman-group-toggle { background: none; border: none; cursor: pointer; padding: 2px 8px; color: #2271b1; font-size: 1rem; line-height: 1; border-radius: 3px; flex-shrink: 0; }
+.coltman-group-toggle:hover { background: #f0f6fc; }
+.coltman-group-body { display: flex; flex-direction: column; gap: 0.75rem; }
+.coltman-group-field-row { display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* ── Map ─────────────────────────────────────────────────────────────────── */
+
+.coltman-map-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+.coltman-map-coords { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.coltman-map-coord-label { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; color: #3c434a; }
+.coltman-map-coord-label input[type="text"] { width: 130px !important; background: #f6f7f7 !important; cursor: default; }
+.coltman-map-container { height: 350px; width: 100%; border: 1px solid #c3c4c7; border-radius: 4px; background: #f0f0f1; }
+
+/* ── Group Field Manager ─────────────────────────────────────────────────── */
+
+.coltman-field-manager { border-top: 1px dashed #c3c4c7; margin-top: 0.75rem; padding-top: 0.5rem; }
+.coltman-field-manager-toggle-row { display: flex; }
+.coltman-field-manager-toggle { background: none; border: 1px solid #c3c4c7; border-radius: 3px; cursor: pointer; padding: 3px 10px; font-size: 0.78rem; color: #646970; line-height: 1.5; }
+.coltman-field-manager-toggle:hover { background: #f6f7f7; border-color: #8c8f94; color: #1d2327; }
+.coltman-field-manager-panel { margin-top: 0.5rem; background: #f9f9f9; border: 1px solid #e2e4e7; border-radius: 4px; padding: 0.75rem; }
+.coltman-dynamic-fields-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 0.5rem; min-height: 24px; }
+.coltman-dynamic-field-item { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #e2e4e7; border-radius: 3px; padding: 4px 8px; font-size: 0.8rem; }
+.coltman-dynamic-field-info { color: #3c434a; }
+.coltman-dynamic-field-info code { background: #eef0f1; padding: 0 4px; border-radius: 2px; font-size: 0.78rem; }
+.coltman-remove-dynamic-field { background: none; border: none; cursor: pointer; color: #d63638; font-size: 0.8rem; padding: 2px 6px; border-radius: 3px; line-height: 1; }
+.coltman-remove-dynamic-field:hover { background: #fce8e8; }
+.coltman-no-dynamic-fields { color: #8c8f94; font-size: 0.8rem; font-style: italic; margin: 0; }
+.coltman-add-field-form { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; border-top: 1px solid #e2e4e7; padding-top: 0.5rem; margin-top: 0.25rem; }
+.coltman-add-field-form select,
+.coltman-add-field-form input[type="text"] { height: 30px; font-size: 0.8rem; padding: 0 6px; border: 1px solid #c3c4c7; border-radius: 3px; background: #fff; }
+.coltman-add-field-form select { min-width: 110px; }
+.coltman-add-field-form input[type="text"] { flex: 1; min-width: 120px; }
+.coltman-add-dynamic-field { background: #2271b1; color: #fff; border: none; border-radius: 3px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; height: 30px; }
+.coltman-add-dynamic-field:hover { background: #135e96; }
+.coltman-add-dynamic-field:disabled { opacity: 0.6; cursor: default; }
+.coltman-field-manager-note { color: #8c8f94; font-size: 0.75rem; font-style: italic; margin: 6px 0 0; }
+
+/* ── Gallery ─────────────────────────────────────────────────────────────── */
+
+/* Outer wrapper */
+.coltman-gallery { border: 1px solid #e2e4e7; border-radius: 6px; background: #fff; overflow: hidden; }
+
+/* List area */
+.coltman-gallery-list { display: flex; flex-direction: column; gap: 0; padding: 0; }
+
+/* Individual item card */
+.coltman-gallery-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #f0f0f1; background: #fff; transition: background 0.12s; }
+.coltman-gallery-item:last-child { border-bottom: none; }
+.coltman-gallery-item:hover { background: #fafafa; }
+
+/* Drag handle */
+.gallery-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 4px 6px; color: #c3c4c7; border-radius: 3px; font-size: 18px; flex-shrink: 0; line-height: 1; user-select: none; }
+.gallery-drag-handle:hover { color: #646970; background: rgba(0,0,0,0.05); }
+.gallery-drag-handle:active { cursor: grabbing; }
+
+/* Thumbnail */
+.coltman-gallery-thumb-wrap { position: relative; width: 60px; height: 60px; flex-shrink: 0; border-radius: 5px; overflow: hidden; background: #f0f0f1; border: 1px solid #e2e4e7; }
+.coltman-gallery-thumb { width: 100%; height: 100%; object-fit: cover; display: none; }
+.coltman-gallery-thumb.has-image { display: block; }
+.coltman-gallery-thumb-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #c3c4c7; pointer-events: none; }
+.coltman-gallery-thumb.has-image + .coltman-gallery-thumb-placeholder { display: none; }
+
+/* Fields column */
+.coltman-gallery-fields { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.coltman-gallery-url-row { display: flex; align-items: center; gap: 6px; }
+.coltman-gallery-url-row .image-url { flex: 1; min-width: 0; }
+.coltman-gallery-upload { white-space: nowrap; flex-shrink: 0; }
+.image-alt { font-size: 0.8rem !important; color: #646970 !important; }
+
+/* Remove button */
+.coltman-gallery-remove { background: none; border: 1px solid transparent; color: #c3c4c7; border-radius: 4px; cursor: pointer; padding: 4px 7px; font-size: 15px; flex-shrink: 0; line-height: 1; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+.coltman-gallery-remove:hover { color: #d63638; background: #fce8e8; border-color: #f0a0a0; }
+
+/* Sortable placeholder */
+.gallery-sort-placeholder { background: #f0f6fc; border: 2px dashed #2271b1; border-radius: 4px; min-height: 82px; opacity: 0.6; }
+
+/* Footer / add button */
+.coltman-gallery-footer { padding: 8px 12px; background: #f9f9f9; border-top: 1px solid #e2e4e7; }
+.coltman-gallery-add { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Repeater ──────────────────────────────────────────────────────────── */
+
+.repeater-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 6px; color: #8c8f94; border-radius: 3px; }
+.repeater-drag-handle:hover { color: #1d2327; background: rgba(0,0,0,0.06); }
+.repeater-drag-handle:active { cursor: grabbing; }
+.repeater-sort-placeholder { background: #e5e7eb; border: 2px dashed #9ca3af; border-radius: 4px; min-height: 40px; }

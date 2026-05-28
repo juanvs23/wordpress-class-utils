@@ -1,138 +1,103 @@
 # Framework Coltman — Guía completa
 
-Módulo PHP reutilizable para WordPress que reemplaza la necesidad de **ACF (Advanced Custom Fields)** y plugins similares. Permite registrar Custom Post Types, taxonomías, metaboxes con campos personalizados y meta de usuario sin dependencias externas.
+> **Versión 1.13.0** — Reemplaza ACF sin dependencias externas ni licencias Pro.
 
-Se usa en temas y plugins. Se distribuye como sub-repositorio git independiente — se copia la carpeta `classes/` y funciona.
+Módulo PHP reutilizable para WordPress que registra Custom Post Types, taxonomías, metaboxes con campos personalizados, meta de términos y meta de usuario. Se distribuye como sub-repositorio git independiente — copia la carpeta `classes/` y funciona.
 
 ---
 
 ## Requisitos mínimos
 
-| Componente | Versión mínima | Motivo |
+| Componente | Mínimo | Motivo |
 |---|---|---|
-| **PHP** | **8.0** | Union types (`array\|bool`) en constructores · `str_starts_with()` en auto-detección de contexto |
-| **WordPress** | **5.0** | `determine_locale()` (carga del textdomain) · `show_in_rest` en CPTs y taxonomías · `wp_normalize_path()` |
-| **ext-iconv** | — | `formaturltext()` usa `iconv('UTF-8', 'ASCII//TRANSLIT', ...)` para eliminar tildes |
+| **PHP** | **8.0** | Union types, `str_starts_with()`, match expression |
+| **WordPress** | **5.0** | `determine_locale()`, `register_post_meta()`, `wp_normalize_path()` |
+| **ext-iconv** | — | `formaturltext()` usa `iconv` para eliminar tildes |
 
-> **ext-iconv** viene compilada por defecto en la mayoría de instalaciones PHP. Si no está disponible, `formaturltext()` puede fallar silenciosamente. El resto del framework no depende de ella.
-
-### Requisitos adicionales para ejecutar las pruebas unitarias
-
-| Componente | Versión mínima | Motivo |
-|---|---|---|
-| **PHP** | **8.1** | PHPUnit 10 requiere PHP 8.1+ (el framework en sí funciona con 8.0) |
-| **ext-dom** | — | PHPUnit |
-| **ext-mbstring** | — | PHPUnit |
-| **ext-xml** | — | PHPUnit |
-| **ext-xmlwriter** | — | PHPUnit |
-
-```bash
-# Verificar los requisitos en un servidor
-php -r "echo PHP_VERSION . PHP_EOL;"
-php -r "echo function_exists('iconv') ? 'iconv: OK' : 'iconv: FALTA';"
-php -m | grep -E 'dom|mbstring|xml'
-```
+> Para ejecutar los tests se necesita PHP **8.1** y las extensiones `dom`, `mbstring`, `xml`, `xmlwriter`.
 
 ---
 
 ## Índice
 
-0. [Requisitos mínimos](#requisitos-mínimos)
 1. [Instalación y carga](#1-instalación-y-carga)
 2. [ColtmanRegisterPost — Custom Post Types](#2-coltmanregisterpost--custom-post-types)
 3. [ColtmanRegisterTaxonomy — Taxonomías](#3-coltmanregistertaxonomy--taxonomías)
 4. [ColtmanCreateMetabox — Metaboxes](#4-coltmancreatemetabox--metaboxes)
-5. [Tipos de campo disponibles](#5-tipos-de-campo-disponibles)
+5. [Tipos de campo](#5-tipos-de-campo)
+   - [text](#text--texto-simple), [textarea](#textarea--área-de-texto-html), [number](#number--número), [date](#date--fecha), [email](#email--correo), [url](#url), [color](#color--selector-de-color), [checkbox](#checkbox--casilla), [select](#select--lista-desplegable)
+   - [editor](#editor--wysiwyg-tinymce), [media](#media--selector-de-archivoimagen), [gallery](#gallery--galería-de-imágenes)
+   - [accordion](#accordion--ítems-repetibles-faq-pasos), [repeater](#repeater--filas-repetibles-configurables)
+   - [relationship / get_posts](#relationship--get_posts--posts-relacionados), [get_terms](#get_terms--términos-de-taxonomía)
+   - [group](#group--agrupador-de-campos), [map](#map--selector-de-coordenadas)
 6. [ColtmanTermMeta — Campos en términos](#6-coltmantermmeta--campos-en-términos)
-7. [ColtmanCreateUserMeta — Campos en perfiles de usuario](#7-coltmancreateusermetaa--campos-en-perfiles-de-usuario)
-8. [Utilidades](#8-utilidades)
-9. [Leer valores guardados en el frontend](#9-leer-valores-guardados-en-el-frontend)
-10. [Estructura de archivos](#10-estructura-de-archivos)
-11. [Notas de seguridad](#11-notas-de-seguridad)
-12. [Pruebas unitarias](#12-pruebas-unitarias)
+7. [ColtmanCreateUserMeta — Campos en usuarios](#7-coltmancreateusermetaa--campos-en-usuarios)
+8. [Soporte REST API y Gutenberg](#8-soporte-rest-api-y-gutenberg)
+9. [Utilidades](#9-utilidades)
+10. [Leer valores en el frontend — resumen](#10-leer-valores-en-el-frontend--resumen)
+11. [Ejemplo de uso completo: ficha de producto](#11-ejemplo-de-uso-completo-ficha-de-producto)
+12. [Estructura de archivos](#12-estructura-de-archivos)
+13. [Seguridad](#13-seguridad)
+14. [Pruebas unitarias](#14-pruebas-unitarias)
 
 ---
 
 ## 1. Instalación y carga
 
-### En un tema
-
-En `functions.php`:
+### En un tema (functions.php)
 
 ```php
-// Carga todo el framework Coltman
 require get_stylesheet_directory() . '/classes/class.php';
 ```
-
-`class.php` se encarga de cargar todas las clases en el orden correcto. No es necesario incluir nada más.
 
 ### En un plugin
 
 ```php
-// Al inicio del archivo principal del plugin — no se necesita ninguna configuración extra
 require plugin_dir_path(__FILE__) . 'classes/class.php';
 ```
 
-### Auto-detección de contexto
+`class.php` carga todas las clases en el orden correcto. Nada más es necesario.
 
-El framework detecta automáticamente si está cargado en un tema, plugin o mu-plugin comparando la ruta de `class.php` contra los directorios de WordPress. No se necesita ninguna configuración manual.
+### Constantes disponibles tras la carga
 
-Al cargar `class.php` quedan disponibles tres constantes de solo lectura:
-
-| Constante | Valor ejemplo en tema | Valor ejemplo en plugin |
+| Constante | Ejemplo tema | Ejemplo plugin |
 |---|---|---|
 | `COLTMAN_CONTEXT` | `'theme'` | `'plugin'` |
 | `COLTMAN_ASSETS_URL` | `https://sitio.com/wp-content/themes/mi-tema/classes/assets` | `https://sitio.com/wp-content/plugins/mi-plugin/classes/assets` |
-| `COLTMAN_DIR` | `/var/www/html/.../themes/mi-tema/classes` | `/var/www/html/.../plugins/mi-plugin/classes` |
+| `COLTMAN_DIR` | `/var/www/html/.../classes` | `/var/www/html/.../classes` |
+| `COLTMAN_TEXT_DOMAIN` | `'coltman'` | `'coltman'` |
 
-Los valores posibles de `COLTMAN_CONTEXT` son: `'theme'`, `'plugin'`, `'mu-plugin'`, `'unknown'`.
-
-**Para sobreescribir** (CDN, ruta no estándar) — definir ANTES del require:
+Para sobreescribir `COLTMAN_ASSETS_URL` (CDN, ruta no estándar), definir **antes** del require:
 
 ```php
-define('COLTMAN_ASSETS_URL', 'https://cdn.ejemplo.com/coltman/assets');
+define('COLTMAN_ASSETS_URL', 'https://cdn.ejemplo.com/assets');
 require '.../classes/class.php';
 ```
-
-> La constante anterior `WORK_CONTEXT` fue eliminada: se definía manualmente pero nunca se leía en ningún archivo. El nuevo sistema es completamente automático.
 
 ---
 
 ## 2. ColtmanRegisterPost — Custom Post Types
 
-Registra un Custom Post Type completo con todos sus labels generados automáticamente. Equivale a llamar a `register_post_type()` pero con la mitad del código.
-
-### Cómo funciona
-
-El constructor recibe la configuración, genera los 20+ labels de WordPress automáticamente y engancha `register_post_type()` en el hook `init`. No hay que hacer nada más.
-
-### Parámetros del constructor
+Registra un CPT completo con todos sus labels generados automáticamente.
 
 ```php
 new ColtmanRegisterPost(
-    array      $labelArgs,   // Textos visibles en el admin
-    string     $post_name,   // Slug del CPT (único, sin espacios)
-    array      $args,        // Configuración de comportamiento
-    array      $supports,    // Funcionalidades del editor habilitadas
-    array      $taxonomies,  // Taxonomías pre-asociadas
-    array|bool $rewrite      // Regla de URL personalizada o false
+    array      $labelArgs,   // name, item, domain
+    string     $post_name,   // slug del CPT
+    array      $args,        // comportamiento
+    array      $supports,    // capacidades del editor
+    array      $taxonomies,  // taxonomías asociadas
+    array|bool $rewrite      // regla de URL o false
 );
 ```
 
-### Snippet básico — CPT público con archivo
+### Backend — CPT público
 
 ```php
-// CPT de noticias, visible en frontend, con página de archivo
 new ColtmanRegisterPost(
+    ['name' => 'Noticias', 'item' => 'Noticia', 'domain' => 'mi-tema'],
+    'mi_noticia',
     [
-        'name'   => __('Noticias', 'mi-tema'),   // nombre plural
-        'item'   => __('Noticia', 'mi-tema'),    // nombre singular
-        'domain' => 'mi-tema',                  // text domain
-    ],
-    'mi_noticia', // slug del CPT — se usará en URLs y funciones WP
-    [
-        'description'         => __('Artículos de noticias', 'mi-tema'),
-        'hierarchical'        => false,  // false = como posts, true = como páginas
         'public'              => true,
         'show_ui'             => true,
         'show_in_menu'        => true,
@@ -140,304 +105,108 @@ new ColtmanRegisterPost(
         'show_in_nav_menus'   => true,
         'menu_position'       => 5,
         'menu_icon'           => 'dashicons-megaphone',
-        'can_export'          => true,
-        'has_archive'         => 'noticias',    // slug del archivo: /noticias/
-        'exclude_from_search' => false,
+        'has_archive'         => 'noticias',
         'publicly_queryable'  => true,
         'capability_type'     => 'post',
-        'show_in_rest'        => true,          // habilita el editor de bloques
-        'rest_base'           => 'noticias',    // endpoint REST: /wp-json/wp/v2/noticias
+        'show_in_rest'        => true,
         'map_meta_cap'        => true,
     ],
-    ['title', 'editor', 'thumbnail', 'excerpt', 'revisions', 'custom-fields'],
-    ['categoria_noticia'],  // taxonomías a asociar (deben existir)
-    ['slug' => 'noticia', 'with_front' => false] // URL: /noticia/mi-titulo/
+    ['title', 'editor', 'thumbnail', 'excerpt', 'revisions'],
+    ['categoria_noticia'],
+    ['slug' => 'noticia', 'with_front' => false]
 );
 ```
 
-### Snippet — CPT privado solo para el admin (sin URL pública)
+### Frontend — loop de posts del CPT
 
 ```php
-// CPT de configuración interna — no accesible en frontend
-new ColtmanRegisterPost(
-    [
-        'name'   => __('Configuraciones', 'mi-tema'),
-        'item'   => __('Configuración', 'mi-tema'),
-        'domain' => 'mi-tema',
-    ],
-    'mi_config',
-    [
-        'description'         => '',
-        'hierarchical'        => false,
-        'public'              => false,   // no accesible en frontend
-        'show_ui'             => true,    // pero sí visible en admin
-        'show_in_menu'        => true,
-        'show_in_admin_bar'   => false,
-        'show_in_nav_menus'   => false,
-        'menu_position'       => 99,
-        'menu_icon'           => 'dashicons-admin-settings',
-        'can_export'          => false,
-        'has_archive'         => false,
-        'exclude_from_search' => true,
-        'publicly_queryable'  => false,
-        'capability_type'     => 'post',
-        'show_in_rest'        => false,
-        'rest_base'           => '',
-        'map_meta_cap'        => true,
-    ],
-    ['title', 'custom-fields'],
-    [],
-    false // sin rewrite de URL
-);
+$noticias = new WP_Query([
+    'post_type'      => 'mi_noticia',
+    'posts_per_page' => 6,
+    'post_status'    => 'publish',
+]);
+while ($noticias->have_posts()) {
+    $noticias->the_post();
+    echo '<h2><a href="' . get_permalink() . '">' . get_the_title() . '</a></h2>';
+}
+wp_reset_postdata();
 ```
-
-### Iconos disponibles
-
-Los `menu_icon` son dashicons de WordPress. Algunos útiles:
-
-| Icono | Constante |
-|---|---|
-| Personas | `dashicons-groups` |
-| Ubicación | `dashicons-location` |
-| Calendario | `dashicons-calendar-alt` |
-| Estrella | `dashicons-star-filled` |
-| Carpeta | `dashicons-portfolio` |
-| Productos | `dashicons-cart` |
-| Lista | `dashicons-list-view` |
-| Imagen | `dashicons-format-image` |
-
-Ver todos en: https://developer.wordpress.org/resource/dashicons/
 
 ---
 
 ## 3. ColtmanRegisterTaxonomy — Taxonomías
 
-Registra una taxonomía personalizada con labels completos, capacidades estándar y rewrite de URL. Equivale a `register_taxonomy()` pero sin escribir los 15+ labels manualmente.
-
-### Cómo funciona
-
-El constructor genera los labels, configura las capacidades y engancha `register_taxonomy()` en `init`. La taxonomía puede ser jerárquica (como categorías) o plana (como etiquetas).
-
-### Parámetros del constructor
-
 ```php
 new ColtmanRegisterTaxonomy(
-    array      $config,        // Configuración completa
-    string     $taxonomy_name, // Slug de la taxonomía
-    array      $post_types,    // CPTs a los que se adjunta
-    array|bool $rewrite        // Regla de URL o false
+    array      $config,
+    string     $taxonomy_name,
+    array      $post_types,
+    array|bool $rewrite
 );
 ```
 
-### Snippet — Taxonomía jerárquica (como categorías)
+### Backend
 
 ```php
-// Taxonomía de materiales para el CPT de joyas
 new ColtmanRegisterTaxonomy(
     [
-        'plural_name'      => __('Materiales', 'mi-tema'),
-        'singular_name'    => __('Material', 'mi-tema'),
-        'item'             => __('Material', 'mi-tema'),
-        'text_domain'      => 'mi-tema',
-        'hierarchical'     => true,   // true = muestra como árbol (categorías)
-        'public'           => true,
-        'show_ui'          => true,
-        'show_admin_column'=> true,   // muestra columna en la lista de posts
-        'show_in_nav_menus'=> true,
-        'show_in_rest'     => true,
-        'rest_base'        => 'materiales',
+        'plural_name'       => 'Materiales',
+        'singular_name'     => 'Material',
+        'item'              => 'Material',
+        'text_domain'       => 'mi-tema',
+        'hierarchical'      => true,
+        'public'            => true,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'show_in_nav_menus' => true,
+        'show_in_rest'      => true,
+        'rest_base'         => 'materiales',
     ],
-    'joya_material',           // slug de la taxonomía
-    ['anillo_jewelry'],        // CPTs a los que se adjunta
+    'joya_material',
+    ['anillo_jewelry'],
     ['slug' => 'material', 'with_front' => false]
 );
 ```
 
-### Snippet — Taxonomía plana (como etiquetas)
+### Frontend — términos de una taxonomía
 
 ```php
-// Etiquetas de estilo para múltiples CPTs
-new ColtmanRegisterTaxonomy(
-    [
-        'plural_name'      => __('Estilos', 'mi-tema'),
-        'singular_name'    => __('Estilo', 'mi-tema'),
-        'item'             => __('Estilo', 'mi-tema'),
-        'text_domain'      => 'mi-tema',
-        'hierarchical'     => false,  // false = muestra como tags (sin jerarquía)
-        'public'           => true,
-        'show_ui'          => true,
-        'show_admin_column'=> true,
-        'show_in_nav_menus'=> true,
-        'show_in_rest'     => true,
-        'rest_base'        => 'estilos',
-        'show_tagcloud'    => true,   // opcional: mostrar nube de tags
-    ],
-    'joya_estilo',
-    ['anillo_jewelry', 'anillo_stepsprocess'], // adjuntar a varios CPTs
-    false
-);
-```
-
-### Snippet — Taxonomía privada (solo admin, sin URL pública)
-
-```php
-new ColtmanRegisterTaxonomy(
-    [
-        'plural_name'      => __('Estados internos', 'mi-tema'),
-        'singular_name'    => __('Estado interno', 'mi-tema'),
-        'item'             => __('Estado', 'mi-tema'),
-        'text_domain'      => 'mi-tema',
-        'hierarchical'     => false,
-        'public'           => false,   // no accesible en frontend
-        'show_ui'          => true,    // pero sí visible en admin
-        'show_admin_column'=> true,
-        'show_in_nav_menus'=> false,
-        'show_in_rest'     => false,
-        'rest_base'        => '',
-    ],
-    'estado_interno',
-    ['mi_noticia'],
-    false
-);
+$terms = get_terms(['taxonomy' => 'joya_material', 'hide_empty' => false]);
+foreach ($terms as $term) {
+    echo '<a href="' . get_term_link($term) . '">' . esc_html($term->name) . '</a>';
+}
 ```
 
 ---
 
 ## 4. ColtmanCreateMetabox — Metaboxes
 
-Crea una sección de campos personalizados en la pantalla de edición de posts, páginas o cualquier CPT. Es el corazón del framework y el equivalente directo a los Field Groups de ACF.
-
-### Cómo funciona
-
-1. El constructor recibe la configuración y registra 4 hooks de WordPress.
-2. `add_meta_boxes` → renderiza el panel en el editor.
-3. `admin_enqueue_scripts` → carga media picker, Select2 y color picker.
-4. `admin_head` → inyecta `media.js` y estilos utilitarios inline.
-5. `save_post` → guarda cada campo en `post_meta` al guardar el post.
-
-Los valores se guardan individualmente con `update_post_meta($post_id, $field['id'], $value)` y se recuperan con `get_post_meta($post_id, $field['id'], true)`.
-
-### Estructura del array `$config`
-
-```php
-$config = [
-    // Textos del panel
-    'title'       => 'Nombre visible en el admin',
-    'description' => 'Descripción opcional bajo el título',
-
-    // Identificadores
-    'prefix'      => 'mi_prefix_',   // prefijo para el ID del metabox
-    'domain'      => 'mi-tema',      // text domain (para i18n)
-    'class_name'  => 'mi-clase-css', // clase CSS opcional en el metabox
-
-    // Posición en el editor
-    'context'  => 'normal',  // 'normal' | 'side' | 'advanced'
-    'priority' => 'high',    // 'high' | 'default' | 'low'
-
-    // A qué pantallas aplica (string con comas o un solo valor)
-    'cpt' => 'post',              // solo posts
-    'cpt' => 'post,page',         // posts y páginas
-    'cpt' => 'anillo_jewelry',    // un CPT específico
-
-    // Definición de campos
-    'fields' => [ /* ver sección 5 */ ],
-];
-
-new ColtmanCreateMetabox($config);
-```
-
-### Snippet completo — metabox de producto con varios tipos de campo
+Crea un panel de campos en el editor de posts/páginas/CPTs.
 
 ```php
 new ColtmanCreateMetabox([
-    'title'       => __('Datos del producto', 'mi-tema'),
-    'description' => __('Información adicional del producto', 'mi-tema'),
-    'prefix'      => 'producto_',
-    'domain'      => 'mi-tema',
-    'class_name'  => 'producto-metabox',
-    'context'     => 'normal',
-    'priority'    => 'high',
-    'cpt'         => 'mi_producto',
-    'fields'      => [
-        [
-            'label'   => __('Precio', 'mi-tema'),
-            'id'      => 'producto_precio',
-            'type'    => 'number',
-            'default' => '0',
-            'min'     => 0,
-            'step'    => 0.01,
-            'description' => __('Precio en USD', 'mi-tema'),
-        ],
-        [
-            'label'   => __('Disponible', 'mi-tema'),
-            'id'      => 'producto_disponible',
-            'type'    => 'checkbox',
-            'checked' => true,  // marcado por defecto
-            'description' => __('Marcar si está en stock', 'mi-tema'),
-        ],
-        [
-            'label'   => __('Imagen principal', 'mi-tema'),
-            'id'      => 'producto_imagen',
-            'type'    => 'media',
-            'return'  => 'url',             // guarda la URL de la imagen
-            'button-text'  => __('Seleccionar imagen', 'mi-tema'),
-            'modal-title'  => __('Elige la imagen del producto', 'mi-tema'),
-            'default' => '',
-        ],
-        [
-            'label'   => __('Galería de fotos', 'mi-tema'),
-            'id'      => 'producto_galeria',
-            'type'    => 'gallery',
-            'default' => '',
-        ],
-        [
-            'label'   => __('Descripción larga', 'mi-tema'),
-            'id'      => 'producto_descripcion',
-            'type'    => 'editor',
-            'default' => '',
-        ],
-        [
-            'label'   => __('Estado', 'mi-tema'),
-            'id'      => 'producto_estado',
-            'type'    => 'select',
-            'default' => 'activo',
-            'options' => [
-                'activo'    => __('Activo', 'mi-tema'),
-                'inactivo'  => __('Inactivo', 'mi-tema'),
-                'agotado'   => __('Agotado', 'mi-tema'),
-            ],
-        ],
-        [
-            'label'     => __('Preguntas frecuentes', 'mi-tema'),
-            'id'        => 'producto_faqs',
-            'type'      => 'accordion',
-            'add_image' => 'false', // sin imagen en cada FAQ — DEBE ser string 'false', no bool
-            'default'   => '',
-        ],
-    ],
+    'title'      => 'Datos del producto',
+    'prefix'     => 'producto_',
+    'cpt'        => 'mi_producto',        // string CSV o 'post,page'
+    'context'    => 'normal',             // 'normal' | 'side' | 'advanced'
+    'priority'   => 'high',
+    'fields'     => [ /* ver sección 5 */ ],
 ]);
 ```
 
-### Posicionamiento (`context`)
-
-| Valor | Resultado |
-|---|---|
-| `'normal'` | Debajo del editor principal |
-| `'side'` | En la barra lateral derecha |
-| `'advanced'` | En la zona inferior del editor |
-
-> En el editor de bloques (Gutenberg), `'side'` puede quedar oculto. Usar `'normal'` para mayor compatibilidad.
+Los valores se guardan con `update_post_meta()` y se recuperan con `get_post_meta($post_id, $field_id, true)`.
 
 ---
 
-## 5. Tipos de campo disponibles
+## 5. Tipos de campo
 
-Todos los tipos se usan dentro del array `'fields'` de `ColtmanCreateMetabox` o `ColtmanTermMeta`.
+Todos los tipos se definen dentro del array `'fields'`.
 
 ---
 
 ### `text` — Texto simple
 
+**Backend:**
 ```php
 [
     'label'       => 'Título alternativo',
@@ -445,99 +214,179 @@ Todos los tipos se usan dentro del array `'fields'` de `ColtmanCreateMetabox` o 
     'type'        => 'text',
     'default'     => '',
     'description' => 'Se mostrará en lugar del título principal',
-    // 'pattern'  => '[A-Za-z]+', // validación HTML5 opcional
+    // 'pattern'  => '[A-Za-z0-9]+',  // validación HTML5 opcional
 ]
 ```
 
-**Guardado:** `string` — recuperar con `get_post_meta($id, 'alt_title', true)`
+**Frontend:**
+```php
+$titulo = get_post_meta(get_the_ID(), 'alt_title', true);
+echo $titulo ? esc_html($titulo) : get_the_title();
+```
 
 ---
 
-### `textarea` — Área de texto
+### `textarea` — Área de texto (HTML)
 
+Acepta HTML estructural (`<p>`, `<strong>`, `<table>`, `<div>`…). Guardado con `wp_kses_post()`.
+
+**Backend:**
 ```php
 [
     'label'       => 'Resumen',
     'id'          => 'resumen',
     'type'        => 'textarea',
     'default'     => '',
-    'rows'        => 4,          // altura del textarea (por defecto: 5)
+    'rows'        => 4,
     'placeholder' => 'Escribe un breve resumen…',
 ]
 ```
 
-**Guardado:** `string` con saltos de línea — usar `nl2br()` o `wpautop()` al mostrar.
+**Frontend:**
+```php
+$resumen = get_post_meta(get_the_ID(), 'resumen', true);
+if ($resumen) {
+    echo wp_kses_post($resumen);      // muestra HTML seguro
+    // o bien:
+    echo wpautop(esc_html($resumen)); // si es texto plano con saltos de línea
+}
+```
 
 ---
 
 ### `number` — Número
 
+**Backend:**
 ```php
 [
-    'label'   => 'Posición',
-    'id'      => 'orden',
+    'label'   => 'Precio',
+    'id'      => 'precio',
     'type'    => 'number',
     'default' => '0',
     'min'     => 0,
-    'max'     => 100,
-    'step'    => 1,
+    'max'     => 99999,
+    'step'    => 0.01,
 ]
 ```
 
-**Guardado:** `string` numérico — usar `intval()` o `floatval()` al leer.
+**Frontend:**
+```php
+$precio = (float) get_post_meta(get_the_ID(), 'precio', true);
+echo '$' . number_format($precio, 2);
+```
 
 ---
 
 ### `date` — Fecha
 
+**Backend:**
 ```php
 [
-    'label'   => 'Fecha de publicación',
-    'id'      => 'fecha_pub',
+    'label'   => 'Fecha del evento',
+    'id'      => 'fecha_evento',
     'type'    => 'date',
     'default' => '',
-    'min'     => '2020-01-01',  // fecha mínima (formato YYYY-MM-DD)
-    'max'     => '2030-12-31',  // fecha máxima
+    'min'     => '2024-01-01',
+    'max'     => '2030-12-31',
 ]
 ```
 
-**Guardado:** `string` en formato `YYYY-MM-DD`.
+**Frontend:**
+```php
+$fecha = get_post_meta(get_the_ID(), 'fecha_evento', true);
+if ($fecha) {
+    $ts = strtotime($fecha);
+    echo date_i18n(get_option('date_format'), $ts); // formato del sitio
+}
+```
 
 ---
 
-### `email` — Correo electrónico
+### `email` — Correo
 
+**Backend:**
 ```php
 [
-    'label'   => 'Correo de contacto',
+    'label'   => 'Email de contacto',
     'id'      => 'email_contacto',
     'type'    => 'email',
     'default' => '',
 ]
 ```
 
-**Guardado:** sanitizado con `sanitize_email()`.
+**Frontend:**
+```php
+$email = get_post_meta(get_the_ID(), 'email_contacto', true);
+if ($email) {
+    echo '<a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a>';
+}
+```
 
 ---
 
-### `checkbox` — Casilla de verificación
+### `url`
 
+**Backend:**
 ```php
 [
-    'label'       => 'Mostrar en portada',
-    'id'          => 'show_home',
-    'type'        => 'checkbox',
-    'checked'     => false,      // true = marcado por defecto en posts nuevos
-    'description' => 'Activa esta opción para destacarlo en portada',
+    'label'   => 'Sitio web',
+    'id'      => 'website',
+    'type'    => 'url',
+    'default' => '',
 ]
 ```
 
-**Guardado:** `'on'` cuando está marcado, `''` cuando no.  
-**Leer:**
+**Frontend:**
 ```php
-$show = get_post_meta($post_id, 'show_home', true);
-if ($show === 'on') {
-    // está marcado
+$url = get_post_meta(get_the_ID(), 'website', true);
+if ($url) {
+    echo '<a href="' . esc_url($url) . '" target="_blank" rel="noopener">'
+        . esc_html($url) . '</a>';
+}
+```
+
+---
+
+### `color` — Selector de color
+
+Usa `wp-color-picker` nativo de WordPress.
+
+**Backend:**
+```php
+[
+    'label'   => 'Color de acento',
+    'id'      => 'color_acento',
+    'type'    => 'color',
+    'default' => '#2271b1',
+]
+```
+
+**Frontend:**
+```php
+$color = get_post_meta(get_the_ID(), 'color_acento', true) ?: '#2271b1';
+echo '<style>.producto-header { background-color: ' . esc_attr($color) . '; }</style>';
+```
+
+---
+
+### `checkbox` — Casilla
+
+**Backend:**
+```php
+[
+    'label'       => 'Destacado en portada',
+    'id'          => 'is_featured',
+    'type'        => 'checkbox',
+    'checked'     => false,
+    'description' => 'Actívalo para mostrarlo en la sección destacados',
+]
+```
+
+**Frontend:**
+```php
+$destacado = get_post_meta(get_the_ID(), 'is_featured', true);
+if ($destacado === 'on') {
+    echo '<span class="badge-featured">⭐ Destacado</span>';
 }
 ```
 
@@ -545,238 +394,501 @@ if ($show === 'on') {
 
 ### `select` — Lista desplegable
 
+**Backend:**
 ```php
 [
-    'label'   => 'Categoría de dificultad',
-    'id'      => 'dificultad',
+    'label'   => 'Estado del pedido',
+    'id'      => 'estado_pedido',
     'type'    => 'select',
-    'default' => 'media',
+    'default' => 'pendiente',
     'options' => [
-        // 'value' => 'Etiqueta visible'
-        'baja'  => 'Baja',
-        'media' => 'Media',
-        'alta'  => 'Alta',
+        'pendiente'  => 'Pendiente',
+        'procesando' => 'Procesando',
+        'enviado'    => 'Enviado',
+        'entregado'  => 'Entregado',
     ],
-    // También se puede usar array de arrays:
-    // 'options' => [
-    //     ['value' => 'baja',  'label' => 'Baja',  'selected' => false],
-    //     ['value' => 'media', 'label' => 'Media', 'selected' => true],
-    // ],
 ]
 ```
 
-**Guardado:** el `value` de la opción seleccionada como `string`.
-
----
-
-### `editor` — Editor WYSIWYG (TinyMCE)
-
+**Frontend:**
 ```php
-[
-    'label'         => 'Contenido extendido',
-    'id'            => 'contenido_extra',
-    'type'          => 'editor',
-    'default'       => '',
-    // Opciones opcionales:
-    // 'wpautop'       => true,   // convertir saltos de línea en <p>
-    // 'media-buttons' => true,   // mostrar botón "Añadir media"
-    // 'teeny'         => false,  // true = versión reducida del editor
-    // 'rows'          => 20,     // altura
-]
-```
-
-**Guardado:** HTML sanitizado con `wp_filter_post_kses()`.  
-**Mostrar:**
-```php
-$contenido = get_post_meta($post_id, 'contenido_extra', true);
-echo apply_filters('the_content', $contenido); // aplica filtros estándar de WP
+$estados = [
+    'pendiente'  => 'Pendiente',
+    'procesando' => 'Procesando',
+    'enviado'    => 'Enviado',
+    'entregado'  => 'Entregado',
+];
+$estado = get_post_meta(get_the_ID(), 'estado_pedido', true);
+$label  = $estados[$estado] ?? 'Desconocido';
+echo '<span class="estado estado--' . esc_attr($estado) . '">' . esc_html($label) . '</span>';
 ```
 
 ---
 
-### `media` — Selector de imagen / archivo
+### `editor` — WYSIWYG (TinyMCE)
 
+**Backend:**
 ```php
 [
-    'label'        => 'Imagen de portada personalizada',
-    'id'           => 'portada_custom',
-    'type'         => 'media',
-    'return'       => 'url',    // 'url' guarda la URL | 'id' guarda el attachment ID
-    'button-text'  => 'Seleccionar imagen',
-    'modal-title'  => 'Elige una imagen',
-    'default'      => '',
+    'label'   => 'Descripción extendida',
+    'id'      => 'descripcion_extra',
+    'type'    => 'editor',
+    'default' => '',
+    // 'wpautop'       => true,
+    // 'media-buttons' => true,
+    // 'teeny'         => false,
+    // 'rows'          => 20,
 ]
 ```
 
-**Guardado:** URL o ID del attachment según `return`.  
-**Mostrar con `return => 'url'`:**
+**Frontend:**
 ```php
-$url = get_post_meta($post_id, 'portada_custom', true);
+$contenido = get_post_meta(get_the_ID(), 'descripcion_extra', true);
+if ($contenido) {
+    // Sin filtros — el contenido ya fue sanitizado por wp_filter_post_kses() al guardar
+    echo $contenido;
+
+    // Con auto-párrafos (si el usuario escribió texto con saltos de línea)
+    // echo wpautop($contenido);
+
+    // Con shortcodes procesados
+    // echo do_shortcode($contenido);
+
+    // Con TODA la cadena the_content (wpautop + shortcodes + filtros de plugins)
+    // Usar solo cuando se necesiten específicamente hooks externos
+    // echo apply_filters('the_content', $contenido);
+}
+```
+
+---
+
+### `media` — Selector de archivo/imagen
+
+**Backend:**
+```php
+// Guardar URL
+[
+    'label'       => 'Imagen de portada',
+    'id'          => 'portada_custom',
+    'type'        => 'media',
+    'return'      => 'url',   // 'url' | 'id'
+    'button-text' => 'Seleccionar imagen',
+    'modal-title' => 'Elige la portada',
+    'default'     => '',
+]
+
+// Guardar ID del attachment (para más control)
+[
+    'label'  => 'PDF del catálogo',
+    'id'     => 'catalogo_pdf',
+    'type'   => 'media',
+    'return' => 'id',
+    'default'=> '',
+]
+```
+
+**Frontend:**
+```php
+// Con return => 'url'
+$url = get_post_meta(get_the_ID(), 'portada_custom', true);
 if ($url) {
-    echo '<img src="' . esc_url($url) . '" alt="">';
+    echo '<img src="' . esc_url($url) . '" alt="' . esc_attr(get_the_title()) . '">';
 }
-```
-**Mostrar con `return => 'id'`:**
-```php
-$attachment_id = (int) get_post_meta($post_id, 'portada_custom', true);
-if ($attachment_id) {
-    echo wp_get_attachment_image($attachment_id, 'large');
+
+// Con return => 'id'
+$att_id = (int) get_post_meta(get_the_ID(), 'catalogo_pdf', true);
+if ($att_id) {
+    echo '<a href="' . esc_url(wp_get_attachment_url($att_id)) . '">Descargar catálogo</a>';
+    // O mostrar como imagen responsiva:
+    echo wp_get_attachment_image($att_id, 'large');
 }
 ```
 
 ---
 
-### `gallery` — Galería de imágenes múltiple
+### `gallery` — Galería de imágenes
 
+Cada ítem tiene: alt text editable, campo de URL, botón Upload y drag & drop para reordenar.
+
+**Backend:**
 ```php
 [
     'label'   => 'Galería del producto',
     'id'      => 'galeria_producto',
     'type'    => 'gallery',
     'default' => '',
-    // 'return' => 'url', // por defecto ya es url
+    // 'button-text' => 'Seleccionar',
+    // 'modal-title' => 'Galería',
 ]
 ```
 
-**Guardado:** JSON con este esquema por imagen:
+**Guardado** — JSON array:
 ```json
 [
-  {
-    "id": 123,
-    "url": "https://sitio.com/wp-content/uploads/imagen.jpg",
-    "alt": "Descripción de la imagen",
-    "title": "Título",
-    "item": "uniqueId_1234",
-    "sizes": {"thumbnail": {…}, "medium": {…}, "large": {…}},
-    "mime": "image/jpeg",
-    "width": 1200,
-    "height": 800
-  }
+  {"id": 123, "url": "https://…/foto.jpg", "alt": "Alt personalizado",
+   "title": "Foto 1", "item": "20260528_001", "sizes": {…}, "mime": "image/jpeg",
+   "width": 1200, "height": 800}
 ]
 ```
 
-**Mostrar:**
+**Frontend:**
 ```php
-$json = get_post_meta($post_id, 'galeria_producto', true);
+$json     = get_post_meta(get_the_ID(), 'galeria_producto', true);
 $imagenes = $json ? json_decode($json) : [];
 
+if ($imagenes) : ?>
+<div class="galeria">
+    <?php foreach ($imagenes as $img) : ?>
+    <figure class="galeria__item">
+        <img src="<?php echo esc_url($img->url); ?>"
+             alt="<?php echo esc_attr($img->alt); ?>"
+             width="<?php echo (int) $img->width; ?>"
+             height="<?php echo (int) $img->height; ?>">
+        <?php if (!empty($img->title)) : ?>
+        <figcaption><?php echo esc_html($img->title); ?></figcaption>
+        <?php endif; ?>
+    </figure>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+```
+
+**Frontend — usando `wp_get_attachment_image` para responsividad:**
+```php
 foreach ($imagenes as $img) {
-    echo '<img src="' . esc_url($img->url) . '" alt="' . esc_attr($img->alt) . '">';
-}
-```
-
----
-
-### `get_posts` — Selector de posts relacionados
-
-Muestra un `<select multiple>` con todos los posts publicados de un CPT específico. Usa Select2 para búsqueda.
-
-```php
-[
-    'label'     => 'Posts relacionados',
-    'id'        => 'posts_relacionados',
-    'type'      => 'get_posts',
-    'post_type' => 'post',       // CPT del que cargar los posts
-    'default'   => '[]',
-]
-```
-
-**Guardado:** JSON array de IDs: `"[45, 67, 89]"`  
-**Leer:**
-```php
-$json = get_post_meta($post_id, 'posts_relacionados', true);
-$ids = $json ? json_decode($json) : [];
-
-if (!empty($ids)) {
-    $posts = get_posts(['post__in' => $ids, 'post_type' => 'post', 'posts_per_page' => -1]);
-    foreach ($posts as $post) {
-        echo '<a href="' . get_permalink($post->ID) . '">' . $post->post_title . '</a>';
+    if ($img->id) {
+        echo wp_get_attachment_image($img->id, 'large', false, [
+            'alt' => esc_attr($img->alt),
+        ]);
+    } else {
+        echo '<img src="' . esc_url($img->url) . '" alt="' . esc_attr($img->alt) . '">';
     }
 }
 ```
 
 ---
 
-### `get_terms` — Selector de término de taxonomía
+### `accordion` — Ítems repetibles (FAQ, pasos…)
 
-`<select>` simple con todos los términos de una taxonomía.
+Editor WYSIWYG propio (contenteditable) con soporte HTML completo, drag & drop y botón de imagen opcional.
 
+**Backend:**
 ```php
-[
-    'label'    => 'Categoría principal',
-    'id'       => 'categoria_principal',
-    'type'     => 'get_terms',
-    'taxonomy' => 'category',    // slug de la taxonomía
-    'default'  => '',
-]
-```
-
-**Guardado:** `term_id` como string.  
-**Leer:**
-```php
-$term_id = get_post_meta($post_id, 'categoria_principal', true);
-if ($term_id) {
-    $term = get_term($term_id);
-    echo $term->name;
-}
-```
-
----
-
-### `accordion` — Ítems repetibles (FAQ, pasos, etc.)
-
-Campo complejo para listas de ítems con título, contenido y opcionalmente imagen. Perfecto para FAQs, pasos de proceso, características o cualquier contenido repetible.
-
-```php
-// Con imagen en cada ítem (por defecto)
-[
-    'label'   => 'Galería de testimonios',
-    'id'      => 'testimonios',
-    'type'    => 'accordion',
-    'default' => '',
-]
-
-// Sin imagen (solo título + contenido)
+// FAQ — sin imagen
 [
     'label'     => 'Preguntas frecuentes',
     'id'        => 'faqs',
     'type'      => 'accordion',
-    'add_image' => 'false',   // IMPORTANTE: debe ser el string 'false', no el bool false
+    'add_image' => 'false',   // string 'false', no bool false
     'default'   => '',
 ]
-```
 
-**Guardado:** JSON array de ítems:
-```json
+// Testimonios — con imagen
 [
-  {"id": "faqs_1234_parent", "title": "¿Cuánto tarda?", "content": "Entre 2 y 4 semanas.", "image": ""},
-  {"id": "faqs_5678_parent", "title": "¿Qué materiales usan?", "content": "Oro 18k y plata.", "image": ""}
+    'label'   => 'Testimonios',
+    'id'      => 'testimonios',
+    'type'    => 'accordion',
+    'default' => '',
 ]
 ```
 
-**Mostrar:**
-```php
-$json = get_post_meta($post_id, 'faqs', true);
-$items = $json ? json_decode($json) : [];
-
-foreach ($items as $item) {
-    echo '<details>';
-    echo '<summary>' . esc_html($item->title) . '</summary>';
-    echo '<p>' . esc_html($item->content) . '</p>';
-    echo '</details>';
-}
+**Guardado** — JSON array:
+```json
+[
+  {"id": "faqs_1234_parent", "title": "¿Cuánto tarda?",
+   "content": "<p>Entre <strong>2 y 4 semanas</strong>.</p>", "image": ""}
+]
 ```
 
-**Mostrar con imagen:**
+**Frontend — FAQ con `<details>`:**
+```php
+$json  = get_post_meta(get_the_ID(), 'faqs', true);
+$items = $json ? json_decode($json) : [];
+?>
+<dl class="faq">
+<?php foreach ($items as $item) : ?>
+    <dt><?php echo esc_html($item->title); ?></dt>
+    <dd><?php echo wp_kses_post($item->content); ?></dd>
+<?php endforeach; ?>
+</dl>
+```
+
+**Frontend — testimonios con imagen:**
 ```php
 foreach ($items as $item) {
     echo '<div class="testimonio">';
-    if ($item->image) {
+    if (!empty($item->image)) {
         echo '<img src="' . esc_url($item->image) . '" alt="">';
     }
-    echo '<h3>' . esc_html($item->title) . '</h3>';
-    echo '<p>' . esc_html($item->content) . '</p>';
+    echo '<blockquote>' . wp_kses_post($item->content) . '</blockquote>';
+    echo '<cite>' . esc_html($item->title) . '</cite>';
     echo '</div>';
+}
+```
+
+---
+
+### `repeater` — Filas repetibles configurables
+
+Tabla de filas donde cada fila tiene los sub-campos que definas. Drag & drop para reordenar.
+
+**Backend:**
+```php
+[
+    'label'      => 'Características',
+    'id'         => 'caracteristicas',
+    'type'       => 'repeater',
+    'default'    => '',
+    'sub_fields' => [
+        ['id' => 'icono',       'type' => 'text',     'label' => 'Icono (clase CSS)'],
+        ['id' => 'titulo',      'type' => 'text',     'label' => 'Título'],
+        ['id' => 'descripcion', 'type' => 'textarea', 'label' => 'Descripción'],
+    ],
+]
+```
+
+**Sub-campos disponibles:** `text`, `textarea`, `number`, `email`, `url`, `select`, `checkbox`, `color`, `media`.
+
+**Guardado** — JSON array de filas:
+```json
+[
+  {"icono": "dashicons-star-filled", "titulo": "Calidad premium", "descripcion": "Materiales seleccionados"},
+  {"icono": "dashicons-awards",      "titulo": "Garantía 2 años", "descripcion": "Reparaciones sin costo"}
+]
+```
+
+**Frontend:**
+```php
+$json  = get_post_meta(get_the_ID(), 'caracteristicas', true);
+$filas = $json ? json_decode($json, true) : [];
+?>
+<ul class="caracteristicas">
+<?php foreach ($filas as $fila) : ?>
+    <li>
+        <span class="<?php echo esc_attr($fila['icono'] ?? ''); ?>"></span>
+        <strong><?php echo esc_html($fila['titulo'] ?? ''); ?></strong>
+        <p><?php echo wp_kses_post($fila['descripcion'] ?? ''); ?></p>
+    </li>
+<?php endforeach; ?>
+</ul>
+```
+
+---
+
+### `relationship` / `get_posts` — Posts relacionados
+
+`<select multiple>` con búsqueda AJAX en tiempo real (Select2). `get_posts` es un alias de `relationship` que mantiene compatibilidad con código previo.
+
+**Backend:**
+```php
+// Relacionar con un solo CPT
+[
+    'label'     => 'Productos relacionados',
+    'id'        => 'productos_relacionados',
+    'type'      => 'relationship',
+    'post_type' => 'mi_producto',
+    'default'   => '[]',
+]
+
+// Relacionar con múltiples CPTs (string CSV o array)
+[
+    'label'     => 'Contenido relacionado',
+    'id'        => 'contenido_rel',
+    'type'      => 'relationship',
+    'post_type' => 'post,page,mi_noticia',   // CSV
+    // 'post_type' => ['post', 'page'],        // o array
+    'default'   => '[]',
+]
+```
+
+**Guardado:** JSON array de IDs: `"[45, 67, 89]"`
+
+**Frontend:**
+```php
+$json = get_post_meta(get_the_ID(), 'productos_relacionados', true);
+$ids  = $json ? json_decode($json) : [];
+
+if (!empty($ids)) :
+    $relacionados = get_posts([
+        'post__in'       => array_map('intval', $ids),
+        'post_type'      => 'mi_producto',
+        'posts_per_page' => -1,
+        'orderby'        => 'post__in',  // respetar el orden guardado
+    ]);
+    ?>
+    <div class="productos-relacionados">
+        <?php foreach ($relacionados as $rel) : ?>
+        <a href="<?php echo get_permalink($rel->ID); ?>">
+            <?php echo get_the_post_thumbnail($rel->ID, 'thumbnail'); ?>
+            <span><?php echo esc_html($rel->post_title); ?></span>
+        </a>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+```
+
+---
+
+### `get_terms` — Términos de taxonomía
+
+`<select>` con búsqueda AJAX (Select2). **Multiple selección activada por defecto.**
+
+**Backend:**
+```php
+// Selección múltiple (por defecto)
+[
+    'label'    => 'Materiales',
+    'id'       => 'materiales',
+    'type'     => 'get_terms',
+    'taxonomy' => 'joya_material',
+    'default'  => '[]',
+    // 'placeholder' => 'Busca un material…',
+]
+
+// Selección única (desactivar explícitamente)
+[
+    'label'    => 'Categoría principal',
+    'id'       => 'categoria_principal',
+    'type'     => 'get_terms',
+    'taxonomy' => 'category',
+    'multiple' => false,
+    'default'  => '',
+]
+
+// Múltiples taxonomías en un solo campo
+[
+    'label'    => 'Clasificación',
+    'id'       => 'clasificacion',
+    'type'     => 'get_terms',
+    'taxonomy' => 'joya_material,joya_estilo',
+    'default'  => '[]',
+]
+```
+
+**Guardado:**
+- Multiple (defecto): JSON array de IDs `"[3, 7, 12]"`
+- Único (`multiple: false`): string con el ID `"3"`
+
+**Frontend — múltiple:**
+```php
+$json = get_post_meta(get_the_ID(), 'materiales', true);
+$ids  = $json ? json_decode($json) : [];
+
+foreach ($ids as $term_id) {
+    $term = get_term((int) $term_id, 'joya_material');
+    if ($term && !is_wp_error($term)) {
+        echo '<a href="' . get_term_link($term) . '">' . esc_html($term->name) . '</a>';
+    }
+}
+```
+
+**Frontend — único:**
+```php
+$term_id = get_post_meta(get_the_ID(), 'categoria_principal', true);
+if ($term_id) {
+    $term = get_term((int) $term_id, 'category');
+    if ($term && !is_wp_error($term)) {
+        echo esc_html($term->name);
+    }
+}
+```
+
+---
+
+### `group` — Agrupador de campos
+
+Un único panel colapsable que agrupa varios campos relacionados. Los sub-campos se guardan en meta keys individuales, como si fueran campos independientes.
+
+Tiene dos modos que se pueden combinar:
+- **Campos estáticos** — definidos en PHP con `'fields'`.
+- **Campos dinámicos** — añadidos desde el backoffice vía el panel ⚙ "Manage fields" (sin tocar código). El esquema dinámico se guarda en `wp_options` y es global para todos los posts con ese grupo.
+
+**Backend:**
+```php
+[
+    'label'       => 'SEO',
+    'id'          => 'seo_group',
+    'type'        => 'group',
+    'description' => 'Metadatos para motores de búsqueda',
+    'fields'      => [
+        ['id' => 'seo_title',       'type' => 'text',     'label' => 'Título SEO'],
+        ['id' => 'seo_description', 'type' => 'textarea', 'label' => 'Meta description', 'rows' => 3],
+        ['id' => 'seo_image',       'type' => 'media',    'label' => 'Imagen OG', 'return' => 'url'],
+        ['id' => 'seo_noindex',     'type' => 'checkbox', 'label' => 'No indexar esta página'],
+    ],
+]
+```
+
+> Para añadir campos dinámicos desde el admin, hacer clic en ⚙ "Manage fields" dentro del grupo.
+
+**Frontend — cada sub-campo se lee con su propia meta key:**
+```php
+$seo_title = get_post_meta(get_the_ID(), 'seo_title', true)
+             ?: get_the_title();
+$seo_desc  = get_post_meta(get_the_ID(), 'seo_description', true);
+$seo_img   = get_post_meta(get_the_ID(), 'seo_image', true);
+$noindex   = get_post_meta(get_the_ID(), 'seo_noindex', true) === 'on';
+?>
+<title><?php echo esc_html($seo_title); ?></title>
+<meta name="description" content="<?php echo esc_attr($seo_desc); ?>">
+<?php if ($noindex) : ?>
+<meta name="robots" content="noindex,nofollow">
+<?php endif; ?>
+<?php if ($seo_img) : ?>
+<meta property="og:image" content="<?php echo esc_url($seo_img); ?>">
+<?php endif; ?>
+```
+
+---
+
+### `map` — Selector de coordenadas
+
+Mapa Leaflet interactivo. Clic para colocar marcador, draggable, sincronización en tiempo real.
+
+**Backend:**
+```php
+[
+    'label'    => 'Ubicación',
+    'id'       => 'ubicacion',
+    'type'     => 'map',
+    'zoom'     => 13,    // zoom por defecto cuando no hay coordenadas
+    'default'  => '',
+]
+```
+
+**Guardado:** `{"lat": 4.7109886, "lng": -74.0720887, "zoom": 14}`
+
+**Frontend — mapa con Leaflet:**
+```php
+$coords_json = get_post_meta(get_the_ID(), 'ubicacion', true);
+$coords      = $coords_json ? json_decode($coords_json, true) : null;
+
+if ($coords) :
+    wp_enqueue_style( 'leaflet', 'https://unpkg.com/leaflet@1.9/dist/leaflet.css' );
+    wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9/dist/leaflet.js', [], null, true);
+    ?>
+    <div id="mapa-tienda" style="height:350px"></div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var map = L.map('mapa-tienda').setView(
+            [<?php echo (float) $coords['lat']; ?>, <?php echo (float) $coords['lng']; ?>],
+            <?php echo (int) $coords['zoom']; ?>
+        );
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([<?php echo (float) $coords['lat']; ?>, <?php echo (float) $coords['lng']; ?>])
+         .addTo(map)
+         .bindPopup('<?php echo esc_js(get_the_title()); ?>');
+    });
+    </script>
+<?php endif; ?>
+```
+
+**Frontend — solo latitud/longitud para un mapa externo (Google Maps):**
+```php
+$coords = json_decode(get_post_meta(get_the_ID(), 'ubicacion', true), true);
+if ($coords) {
+    $url = "https://www.google.com/maps?q={$coords['lat']},{$coords['lng']}";
+    echo '<a href="' . esc_url($url) . '" target="_blank">Ver en Google Maps</a>';
 }
 ```
 
@@ -784,135 +896,103 @@ foreach ($items as $item) {
 
 ## 6. ColtmanTermMeta — Campos en términos
 
-Agrega campos personalizados a la pantalla de creación y edición de términos de una taxonomía (categorías, etiquetas o taxonomías personalizadas).
+Agrega campos personalizados a las pantallas de crear/editar términos de taxonomía.
 
-### Cómo funciona
-
-Al instanciar la clase se registran hooks en `{taxonomy}_add_form_fields` y `{taxonomy}_edit_form_fields` para renderizar los campos, y en `created_{taxonomy}` y `edited_{taxonomy}` para guardarlos con `update_term_meta()`.
-
-> **Diferencia importante con `ColtmanCreateMetabox`:** el array `'fields'` usa las **claves** del array como IDs de campo, no una propiedad `'id'` dentro del campo.
-
-### Parámetros
+> **Diferencia con `ColtmanCreateMetabox`:** el array `'fields'` usa las **claves** del array como IDs (no la propiedad `'id'` dentro del campo).
 
 ```php
 new ColtmanTermMeta([
-    'taxonomy' => 'slug_de_la_taxonomia',
-    'title'    => 'Título de la sección',
+    'taxonomy' => 'joya_material',
+    'title'    => 'Información del material',
     'fields'   => [
-        // La clave del array ES el id del campo
-        'nombre_del_campo' => [
-            'label'   => 'Etiqueta visible',
-            'type'    => 'text',  // text | textarea | select | media
-            'default' => '',
-        ],
-    ],
-]);
-```
-
-### Tipos soportados
-
-`text`, `number`, `email`, `date`, `textarea`, `select`, `media`
-
-> Los tipos `gallery`, `accordion`, `editor`, `get_posts` y `get_terms` aún no están implementados en esta clase. Ver `docs/roadmap.md` → Fase 2.
-
-### Snippet completo
-
-```php
-// Agrega campos a los términos de la taxonomía 'tipo_de_joyeria'
-new ColtmanTermMeta([
-    'taxonomy' => 'tipo_de_joyeria',
-    'title'    => 'Información del tipo de joya',
-    'fields'   => [
-        // 'nombre_campo' => ['label', 'type', ...]
-        'jewel_material' => [
-            'label'   => __('Material principal', 'mi-tema'),
-            'type'    => 'text',
-            'default' => '',
-        ],
-        'jewel_origin' => [
-            'label'   => __('País de origen', 'mi-tema'),
-            'type'    => 'select',
-            'default' => 'colombia',
-            'options' => [
-                'colombia' => 'Colombia',
-                'peru'     => 'Perú',
-                'mexico'   => 'México',
-            ],
-        ],
-        'jewel_image' => [
-            'label'        => __('Imagen del tipo', 'mi-tema'),
-            'type'         => 'media',
-            'return'       => 'url',
-            'button-text'  => 'Seleccionar',
-            'modal-title'  => 'Elige una imagen',
-            'default'      => '',
-        ],
-        'jewel_description' => [
-            'label'   => __('Descripción', 'mi-tema'),
+        'mat_descripcion' => [
+            'label'   => 'Descripción',
             'type'    => 'textarea',
             'default' => '',
         ],
+        'mat_imagen' => [
+            'label'       => 'Imagen representativa',
+            'type'        => 'media',
+            'return'      => 'url',
+            'button-text' => 'Seleccionar',
+            'modal-title' => 'Imagen del material',
+            'default'     => '',
+        ],
+        'mat_color' => [
+            'label'   => 'Color representativo',
+            'type'    => 'color',
+            'default' => '#c0a060',
+        ],
+        'mat_activo' => [
+            'label'       => 'Visible en catálogo',
+            'type'        => 'checkbox',
+            'description' => 'Desmarcar para ocultar del filtro',
+        ],
     ],
 ]);
 ```
 
-### Leer un campo de término
-
+**Frontend:**
 ```php
-// Obtener el material de un término de 'tipo_de_joyeria'
-$term_id = get_queried_object_id(); // en archive de taxonomía
-$material = get_term_meta($term_id, 'jewel_material', true);
-echo esc_html($material);
+// En un template de archivo de taxonomía
+$term = get_queried_object();
 
-// O desde un post que tiene el término asignado
-$terms = get_the_terms($post_id, 'tipo_de_joyeria');
+$descripcion = get_term_meta($term->term_id, 'mat_descripcion', true);
+$imagen      = get_term_meta($term->term_id, 'mat_imagen', true);
+$color       = get_term_meta($term->term_id, 'mat_color', true) ?: '#cccccc';
+$activo      = get_term_meta($term->term_id, 'mat_activo', true) === 'on';
+
+if ($imagen) {
+    echo '<img src="' . esc_url($imagen) . '" alt="' . esc_attr($term->name) . '">';
+}
+echo '<h1 style="color:' . esc_attr($color) . '">' . esc_html($term->name) . '</h1>';
+echo wp_kses_post($descripcion);
+
+// Desde un post: obtener meta de los términos asignados
+$terms = get_the_terms(get_the_ID(), 'joya_material');
 if ($terms) {
-    $term = $terms[0]; // primer término
-    $material = get_term_meta($term->term_id, 'jewel_material', true);
+    foreach ($terms as $t) {
+        $color = get_term_meta($t->term_id, 'mat_color', true);
+        echo '<span style="background:' . esc_attr($color) . '">'
+             . esc_html($t->name) . '</span>';
+    }
 }
 ```
 
 ---
 
-## 7. ColtmanCreateUserMeta — Campos en perfiles de usuario
+## 7. ColtmanCreateUserMeta — Campos en usuarios
 
-Agrega una sección con campos personalizados a la pantalla de perfil del usuario en el admin (`/wp-admin/profile.php` y `/wp-admin/user-edit.php`).
-
-### Cómo funciona
-
-Registra hooks en `show_user_profile` y `edit_user_profile` para renderizar, y en `personal_options_update` y `edit_user_profile_update` para guardar con `update_user_meta()`. Verifica `current_user_can('edit_user')` antes de guardar.
-
-### Snippet completo
+Agrega campos personalizados al perfil de usuario en el admin.
 
 ```php
 new ColtmanCreateUserMeta([
-    'title'       => __('Información profesional', 'mi-tema'),
-    'description' => __('Datos adicionales del colaborador', 'mi-tema'),
-    'fields'      => [
+    'title'  => 'Información profesional',
+    'fields' => [
         [
-            'label'   => __('Especialidad', 'mi-tema'),
+            'label'   => 'Especialidad',
             'id'      => 'user_especialidad',
             'type'    => 'text',
             'default' => '',
         ],
         [
-            'label'        => __('Foto de perfil', 'mi-tema'),
-            'id'           => 'user_foto',
-            'type'         => 'media',
-            'return'       => 'url',
-            'button-text'  => 'Seleccionar foto',
-            'modal-title'  => 'Elige tu foto',
-            'default'      => '',
+            'label'       => 'Foto de perfil',
+            'id'          => 'user_foto',
+            'type'        => 'media',
+            'return'      => 'url',
+            'button-text' => 'Seleccionar foto',
+            'modal-title' => 'Foto de perfil',
+            'default'     => '',
         ],
         [
-            'label'   => __('Biografía', 'mi-tema'),
+            'label'   => 'Biografía',
             'id'      => 'user_bio_custom',
             'type'    => 'textarea',
             'default' => '',
-            'rows'    => 5,
+            'rows'    => 4,
         ],
         [
-            'label'   => __('Rol visible', 'mi-tema'),
+            'label'   => 'Rol visible',
             'id'      => 'user_rol',
             'type'    => 'select',
             'default' => 'colaborador',
@@ -923,287 +1003,559 @@ new ColtmanCreateUserMeta([
             ],
         ],
         [
-            'label'       => __('Perfil verificado', 'mi-tema'),
+            'label'       => 'Perfil verificado',
             'id'          => 'user_verificado',
             'type'        => 'checkbox',
-            'description' => 'Marca si el perfil ha sido verificado',
+            'description' => 'Actívalo cuando el perfil haya sido revisado',
         ],
     ],
 ]);
 ```
 
-### Leer campos de usuario
-
+**Frontend:**
 ```php
-// Obtener foto de un usuario
-$user_id = get_the_author_meta('ID');
-$foto = get_user_meta($user_id, 'user_foto', true);
-if ($foto) {
-    echo '<img src="' . esc_url($foto) . '" alt="Foto de perfil">';
-}
-
-// Verificar si el perfil está verificado
-$verificado = get_user_meta($user_id, 'user_verificado', true);
-if ($verificado === 'on') {
-    echo '<span class="verificado">✓ Verificado</span>';
-}
+// En single.php — datos del autor del post
+$user_id     = get_the_author_meta('ID');
+$foto        = get_user_meta($user_id, 'user_foto', true);
+$bio         = get_user_meta($user_id, 'user_bio_custom', true);
+$especialidad = get_user_meta($user_id, 'user_especialidad', true);
+$verificado  = get_user_meta($user_id, 'user_verificado', true) === 'on';
+?>
+<div class="autor-card">
+    <?php if ($foto) : ?>
+    <img src="<?php echo esc_url($foto); ?>" alt="<?php the_author(); ?>" class="autor-foto">
+    <?php endif; ?>
+    <div class="autor-info">
+        <strong><?php the_author(); ?></strong>
+        <?php if ($verificado) : ?>
+        <span class="verificado" title="Perfil verificado">✓</span>
+        <?php endif; ?>
+        <?php if ($especialidad) : ?>
+        <em><?php echo esc_html($especialidad); ?></em>
+        <?php endif; ?>
+        <?php if ($bio) : ?>
+        <p><?php echo wp_kses_post($bio); ?></p>
+        <?php endif; ?>
+    </div>
+</div>
 ```
 
 ---
 
-## 8. Utilidades
+## 8. Soporte REST API y Gutenberg
+
+Cualquier campo puede exponerse en la REST API y en el panel lateral de Gutenberg añadiendo `'rest' => true` en su definición.
+
+### Backend — activar campo en REST
+
+```php
+new ColtmanCreateMetabox([
+    'title'  => 'SEO',
+    'prefix' => 'seo_',
+    'cpt'    => 'mi_producto',
+    'fields' => [
+        ['id' => 'seo_title',       'type' => 'text',     'label' => 'Título SEO',     'rest' => true],
+        ['id' => 'seo_description', 'type' => 'textarea', 'label' => 'Meta description','rest' => true],
+        ['id' => 'precio',          'type' => 'number',   'label' => 'Precio',          'rest' => true],
+        // Campos sin 'rest' => true NO se exponen en la API
+    ],
+]);
+```
+
+Lo que ocurre automáticamente:
+- `register_post_meta()` es llamado en el hook `init` con `show_in_rest: true`.
+- El panel ⚙ "Coltman Fields" aparece en la barra lateral de Gutenberg con controles para editar los campos directamente desde el editor de bloques.
+- Tipos complejos (`gallery`, `repeater`, `group`…) muestran un aviso informativo — editarlos desde el metabox clásico.
+
+### Frontend — leer desde la REST API
+
+```bash
+GET /wp-json/wp/v2/mi_producto/123
+```
+
+```json
+{
+  "id": 123,
+  "title": { "rendered": "Anillo de oro" },
+  "meta": {
+    "seo_title": "Anillo de oro 18k | Mi Joyería",
+    "seo_description": "Anillo artesanal…",
+    "precio": "890"
+  }
+}
+```
+
+```js
+// En JavaScript / React
+fetch('/wp-json/wp/v2/mi_producto/123')
+  .then(r => r.json())
+  .then(post => {
+      console.log(post.meta.seo_title);
+      console.log(post.meta.precio);
+  });
+```
+
+---
+
+## 9. Utilidades
 
 ### `coltman_trim_content_text_fn()` — Recortar texto
 
-Recorta un texto al número de palabras indicado.
-
 ```php
-// $content = texto a recortar
-// $length  = número de palabras (default: 15)
-// $ellipsis = sufijo (default: '...')
 $resumen = coltman_trim_content_text_fn(get_the_content(), 30, '…');
-echo $resumen;
-// → "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod…"
+// → "Las primeras treinta palabras del contenido…"
 ```
 
----
-
-### `formaturltext()` — Formatear texto para URL
-
-Convierte texto con tildes y espacios a un formato apto para parámetros de URL.
+### `formaturltext()` — Texto seguro para URL
 
 ```php
-$texto = "Anillos de Compromiso";
-$url_param = formaturltext($texto);
-// → "Anillos+de+Compromiso"
+$slug = formaturltext('Joyería & Diseño Único');
+// → "Joyeria+Diseno+Unico"
 
-$texto_tildes = "Joyería Única";
-$url_param = formaturltext($texto_tildes);
-// → "Joyeria+Unica"
+// Uso típico: construir una URL de búsqueda
+$url = home_url('/buscar/?q=' . formaturltext($busqueda));
 ```
-
----
 
 ### `get_estimated_reading_time()` — Tiempo de lectura
 
-Calcula el tiempo estimado de lectura de un post en minutos.
-
 ```php
-// Parámetros:
-// 'post'          → ID del post, objeto WP_Post o null (usa el post global)
-// 'wpm'           → palabras por minuto (default: 200)
-// 'single_suffix' → sufijo singular (default: 'min')
-// 'plural_suffix' → sufijo plural (default: 'mins')
-
 $tiempo = get_estimated_reading_time([
     'post'          => get_the_ID(),
     'wpm'           => 200,
     'single_suffix' => 'minuto',
     'plural_suffix' => 'minutos',
 ]);
-
-echo 'Lectura: ' . $tiempo->time . ' ' . $tiempo->suffix;
-// → "Lectura: 3 minutos"
+echo "Lectura: {$tiempo->time} {$tiempo->suffix}"; // → "Lectura: 4 minutos"
 ```
 
----
-
-### `process_headings_and_get_data()` y `get_extracted_headings_array()` — Tabla de contenidos
-
-Inyecta IDs en los headings del contenido y permite generar una tabla de contenidos (índice navegable).
-
-**Cómo funciona:**
-1. El filtro `the_content` es interceptado automáticamente (prioridad 15).
-2. Cada `<h1>`–`<h6>` recibe un `id="slug-del-titulo"` si no lo tiene.
-3. Después de llamar a `the_content()`, `get_extracted_headings_array()` devuelve los headings detectados.
-
-**Uso en plantilla para construir un índice:**
+### `get_extracted_headings_array()` — Tabla de contenidos
 
 ```php
 <?php
-// 1. Obtener el contenido ya procesado (inyecta IDs en headings)
-$headings = get_extracted_headings_array(); // llamar ANTES si quieres el índice arriba
+$headings = get_extracted_headings_array(); // extraer antes de the_content()
 ?>
-
-<?php if (!empty($headings)): ?>
-<nav class="tabla-de-contenidos">
-    <p><strong>En este artículo:</strong></p>
+<?php if ($headings) : ?>
+<nav class="tabla-contenidos">
     <ol>
-        <?php foreach ($headings as $heading): ?>
-        <li>
-            <a href="#<?php echo esc_attr($heading->id); ?>">
-                <?php echo esc_html($heading->text); ?>
-            </a>
-        </li>
-        <?php endforeach; ?>
+    <?php foreach ($headings as $h) : ?>
+        <li><a href="#<?php echo esc_attr($h->id); ?>"><?php echo esc_html($h->text); ?></a></li>
+    <?php endforeach; ?>
     </ol>
 </nav>
 <?php endif; ?>
-
 <?php the_content(); // los headings ya tendrán sus IDs inyectados ?>
 ```
 
-> Si llamas `get_extracted_headings_array()` antes de `the_content()`, la función usa `get_the_content()` como fallback y procesa el contenido en seco para extraer los headings sin imprimirlos.
-
 ---
 
-## 9. Leer valores guardados en el frontend
-
-Resumen rápido de cómo recuperar cada tipo de campo:
+## 10. Leer valores en el frontend — resumen
 
 ```php
 $id = get_the_ID();
 
-// Texto, email, number, date, select, checkbox
-$valor = get_post_meta($id, 'mi_campo', true);
+// ── Tipos simples ──────────────────────────────────────────────
+$texto    = get_post_meta($id, 'campo_text',     true);
+$num      = (float) get_post_meta($id, 'campo_number', true);
+$fecha    = get_post_meta($id, 'campo_date',     true); // 'YYYY-MM-DD'
+$email    = get_post_meta($id, 'campo_email',    true);
+$url      = get_post_meta($id, 'campo_url',      true);
+$color    = get_post_meta($id, 'campo_color',    true); // '#rrggbb'
+$select   = get_post_meta($id, 'campo_select',   true); // valor de la opción
+$checkbox = get_post_meta($id, 'campo_checkbox', true) === 'on';
 
-// Media (url)
-$url = get_post_meta($id, 'mi_campo', true);
-echo '<img src="' . esc_url($url) . '">';
+// ── HTML ───────────────────────────────────────────────────────
+$textarea  = get_post_meta($id, 'campo_textarea', true);
+echo wp_kses_post($textarea); // HTML seguro
 
-// Media (id)
-$att_id = (int) get_post_meta($id, 'mi_campo', true);
-echo wp_get_attachment_image($att_id, 'medium');
+$editor  = get_post_meta($id, 'campo_editor', true);
+echo $editor;                                       // sanitizado en el guardado — echo directo es seguro
+// echo wpautop($editor);                           // + auto-párrafos
+// echo do_shortcode($editor);                      // + shortcodes
+// echo apply_filters('the_content', $editor);      // + todos los filtros WP/plugins
 
-// Gallery
-$items = json_decode(get_post_meta($id, 'mi_campo', true)) ?: [];
-foreach ($items as $img) {
+// ── Media ──────────────────────────────────────────────────────
+$media_url = get_post_meta($id, 'campo_media_url', true);
+echo '<img src="' . esc_url($media_url) . '">';
+
+$media_id  = (int) get_post_meta($id, 'campo_media_id', true);
+echo wp_get_attachment_image($media_id, 'large');
+
+// ── Gallery ────────────────────────────────────────────────────
+$imagenes = json_decode(get_post_meta($id, 'campo_gallery', true) ?: '[]');
+foreach ($imagenes as $img) {
     echo '<img src="' . esc_url($img->url) . '" alt="' . esc_attr($img->alt) . '">';
 }
 
-// Accordion / FAQ
-$items = json_decode(get_post_meta($id, 'mi_campo', true)) ?: [];
+// ── Accordion ─────────────────────────────────────────────────
+$items = json_decode(get_post_meta($id, 'campo_accordion', true) ?: '[]');
 foreach ($items as $item) {
     echo '<h3>' . esc_html($item->title) . '</h3>';
-    echo '<div>' . esc_html($item->content) . '</div>';
-    if ($item->image) echo '<img src="' . esc_url($item->image) . '">';
+    echo wp_kses_post($item->content);
 }
 
-// Get posts (IDs relacionados)
-$ids = json_decode(get_post_meta($id, 'mi_campo', true)) ?: [];
-$posts = get_posts(['post__in' => $ids, 'post_type' => 'any', 'posts_per_page' => -1]);
+// ── Repeater ─────────────────────────────────────────────────
+$filas = json_decode(get_post_meta($id, 'campo_repeater', true) ?: '[]', true);
+foreach ($filas as $fila) {
+    echo esc_html($fila['mi_subfield'] ?? '');
+}
 
-// Get terms (term_id)
-$term_id = get_post_meta($id, 'mi_campo', true);
-$term = get_term($term_id);
+// ── Relationship / get_posts ───────────────────────────────────
+$ids  = json_decode(get_post_meta($id, 'campo_relationship', true) ?: '[]');
+$posts = get_posts(['post__in' => $ids, 'post_type' => 'any', 'posts_per_page' => -1]);
+foreach ($posts as $p) {
+    echo '<a href="' . get_permalink($p->ID) . '">' . esc_html($p->post_title) . '</a>';
+}
+
+// ── get_terms (multiple — defecto) ────────────────────────────
+$term_ids = json_decode(get_post_meta($id, 'campo_terms', true) ?: '[]');
+foreach ($term_ids as $tid) {
+    $t = get_term((int) $tid);
+    echo $t ? esc_html($t->name) : '';
+}
+
+// ── get_terms (único: multiple => false) ──────────────────────
+$term_id = get_post_meta($id, 'campo_term_unico', true);
+$term    = $term_id ? get_term((int) $term_id) : null;
 echo $term ? esc_html($term->name) : '';
 
-// Término de taxonomía (term meta)
-$valor = get_term_meta($term_id, 'nombre_campo', true);
+// ── Group ─────────────────────────────────────────────────────
+// Cada sub-campo del group tiene su propia meta key:
+$seo_title = get_post_meta($id, 'seo_title', true);
+$seo_desc  = get_post_meta($id, 'seo_description', true);
 
-// Campo de usuario
-$valor = get_user_meta($user_id, 'nombre_campo', true);
+// ── Map ───────────────────────────────────────────────────────
+$coords = json_decode(get_post_meta($id, 'ubicacion', true) ?: '{}', true);
+$lat    = $coords['lat']  ?? null;
+$lng    = $coords['lng']  ?? null;
+$zoom   = $coords['zoom'] ?? 13;
 ```
 
 ---
 
-## 10. Estructura de archivos
+## 11. Ejemplo de uso completo: ficha de producto
+
+### Backend — `include/features/producto/metabox.php`
+
+```php
+new ColtmanCreateMetabox([
+    'title'   => 'Datos del producto',
+    'prefix'  => 'prod_',
+    'cpt'     => 'mi_producto',
+    'context' => 'normal',
+    'fields'  => [
+        // ── Precios ──────────────────────────────────────────
+        [
+            'id'      => 'precio_base',
+            'label'   => 'Precio base (USD)',
+            'type'    => 'number',
+            'min'     => 0,
+            'step'    => 0.01,
+            'default' => '0',
+            'rest'    => true,
+        ],
+        [
+            'id'          => 'en_oferta',
+            'label'       => '¿En oferta?',
+            'type'        => 'checkbox',
+            'description' => 'Actívalo para mostrar el precio de oferta',
+        ],
+        [
+            'id'    => 'precio_oferta',
+            'label' => 'Precio de oferta (USD)',
+            'type'  => 'number',
+            'min'   => 0,
+            'step'  => 0.01,
+        ],
+
+        // ── Medios ───────────────────────────────────────────
+        [
+            'id'          => 'imagen_principal',
+            'label'       => 'Imagen principal',
+            'type'        => 'media',
+            'return'      => 'id',
+            'button-text' => 'Seleccionar imagen',
+            'modal-title' => 'Imagen principal del producto',
+        ],
+        [
+            'id'    => 'galeria',
+            'label' => 'Galería de fotos',
+            'type'  => 'gallery',
+        ],
+
+        // ── Clasificación ─────────────────────────────────────
+        [
+            'id'       => 'materiales',
+            'label'    => 'Materiales',
+            'type'     => 'get_terms',
+            'taxonomy' => 'joya_material',
+        ],
+        [
+            'id'       => 'estado',
+            'label'    => 'Estado',
+            'type'     => 'select',
+            'default'  => 'activo',
+            'options'  => [
+                'activo'   => 'Disponible',
+                'agotado'  => 'Agotado',
+                'oculto'   => 'Oculto',
+            ],
+        ],
+
+        // ── Características ───────────────────────────────────
+        [
+            'id'         => 'caracteristicas',
+            'label'      => 'Características',
+            'type'       => 'repeater',
+            'sub_fields' => [
+                ['id' => 'icono',  'type' => 'text', 'label' => 'Icono (dashicons)'],
+                ['id' => 'texto',  'type' => 'text', 'label' => 'Descripción'],
+            ],
+        ],
+
+        // ── SEO ───────────────────────────────────────────────
+        [
+            'id'     => 'seo',
+            'label'  => 'SEO',
+            'type'   => 'group',
+            'fields' => [
+                ['id' => 'seo_title', 'type' => 'text',     'label' => 'Título', 'rest' => true],
+                ['id' => 'seo_desc',  'type' => 'textarea', 'label' => 'Descripción', 'rows' => 2],
+            ],
+        ],
+
+        // ── Ubicación ─────────────────────────────────────────
+        [
+            'id'    => 'fabricacion_lugar',
+            'label' => 'Lugar de fabricación',
+            'type'  => 'map',
+            'zoom'  => 12,
+        ],
+    ],
+]);
+```
+
+### Frontend — `single-mi_producto.php`
+
+```php
+<?php get_header(); ?>
+
+<?php while (have_posts()) : the_post();
+    $pid = get_the_ID();
+
+    // Leer todos los campos
+    $precio_base   = (float) get_post_meta($pid, 'precio_base', true);
+    $en_oferta     = get_post_meta($pid, 'en_oferta', true) === 'on';
+    $precio_oferta = (float) get_post_meta($pid, 'precio_oferta', true);
+    $imagen_id     = (int) get_post_meta($pid, 'imagen_principal', true);
+    $galeria       = json_decode(get_post_meta($pid, 'galeria', true) ?: '[]');
+    $materiales    = json_decode(get_post_meta($pid, 'materiales', true) ?: '[]');
+    $estado        = get_post_meta($pid, 'estado', true) ?: 'activo';
+    $caracteristicas = json_decode(get_post_meta($pid, 'caracteristicas', true) ?: '[]', true);
+    $seo_title     = get_post_meta($pid, 'seo_title', true) ?: get_the_title();
+    $coords        = json_decode(get_post_meta($pid, 'fabricacion_lugar', true) ?: '{}', true);
+?>
+
+<article class="producto">
+
+    <!-- Imagen principal -->
+    <div class="producto__imagen">
+        <?php if ($imagen_id) : ?>
+        <?php echo wp_get_attachment_image($imagen_id, 'large', false, ['class' => 'producto__img']); ?>
+        <?php endif; ?>
+    </div>
+
+    <!-- Info -->
+    <div class="producto__info">
+        <h1><?php the_title(); ?></h1>
+
+        <!-- Precio -->
+        <div class="producto__precio">
+            <?php if ($en_oferta && $precio_oferta > 0) : ?>
+            <del>$<?php echo number_format($precio_base, 2); ?></del>
+            <strong>$<?php echo number_format($precio_oferta, 2); ?></strong>
+            <?php else : ?>
+            <strong>$<?php echo number_format($precio_base, 2); ?></strong>
+            <?php endif; ?>
+        </div>
+
+        <!-- Estado -->
+        <?php if ($estado === 'agotado') : ?>
+        <p class="producto__agotado">Agotado temporalmente</p>
+        <?php endif; ?>
+
+        <!-- Materiales -->
+        <?php if ($materiales) : ?>
+        <p class="producto__materiales">
+            <?php foreach ($materiales as $tid) :
+                $t = get_term((int) $tid, 'joya_material');
+                if ($t && !is_wp_error($t)) :
+            ?>
+            <a href="<?php echo get_term_link($t); ?>"><?php echo esc_html($t->name); ?></a>
+            <?php endif; endforeach; ?>
+        </p>
+        <?php endif; ?>
+
+        <!-- Características -->
+        <?php if ($caracteristicas) : ?>
+        <ul class="producto__caracteristicas">
+            <?php foreach ($caracteristicas as $c) : ?>
+            <li>
+                <span class="<?php echo esc_attr($c['icono'] ?? ''); ?>"></span>
+                <?php echo esc_html($c['texto'] ?? ''); ?>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+
+        <!-- Descripción del post -->
+        <div class="producto__descripcion">
+            <?php the_content(); ?>
+        </div>
+    </div>
+
+    <!-- Galería -->
+    <?php if ($galeria) : ?>
+    <div class="producto__galeria">
+        <?php foreach ($galeria as $img) : ?>
+        <figure>
+            <img src="<?php echo esc_url($img->url); ?>"
+                 alt="<?php echo esc_attr($img->alt); ?>"
+                 loading="lazy">
+        </figure>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Mapa de fabricación -->
+    <?php if (!empty($coords['lat'])) : ?>
+    <div class="producto__mapa">
+        <h3>Lugar de fabricación</h3>
+        <div id="mapa-prod" style="height:300px"></div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var m = L.map('mapa-prod').setView(
+                [<?php echo (float) $coords['lat']; ?>, <?php echo (float) $coords['lng']; ?>],
+                <?php echo (int) ($coords['zoom'] ?? 13); ?>
+            );
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(m);
+            L.marker([<?php echo (float) $coords['lat']; ?>, <?php echo (float) $coords['lng']; ?>]).addTo(m);
+        });
+        </script>
+    </div>
+    <?php endif; ?>
+
+</article>
+
+<?php endwhile; ?>
+<?php get_footer(); ?>
+```
+
+---
+
+## 12. Estructura de archivos
 
 ```
 classes/
-├── class.php               ← Loader: require de todos los módulos
-├── class-post-types.php    ← ColtmanRegisterPost
-├── class-taxonomy.php      ← ColtmanRegisterTaxonomy
-├── class-metabox.php       ← ColtmanCreateMetabox
-├── class-termeta.php       ← ColtmanTermMeta
-├── class-usermetabox.php   ← ColtmanCreateUserMeta
-├── input-fields.php        ← ColtmanInputFields (renderizado interno)
-├── readme.md               ← Esta guía
-├── context.md              ← Arquitectura técnica detallada
+├── class.php                    ← Loader + constantes + i18n
+├── class-post-types.php         ← ColtmanRegisterPost
+├── class-taxonomy.php           ← ColtmanRegisterTaxonomy
+├── class-metabox.php            ← ColtmanCreateMetabox
+├── class-termeta.php            ← ColtmanTermMeta
+├── class-usermetabox.php        ← ColtmanCreateUserMeta
+├── input-fields.php             ← ColtmanInputFields (renderizado)
+├── ajax.php                     ← Handlers wp_ajax_* (relationship, terms, group schema)
+├── readme.md                    ← Esta guía
+├── context.md                   ← Arquitectura técnica detallada
+├── CHANGELOG.md                 ← Historial de versiones
 ├── assets/
-│   └── js/
-│       ├── media.js        ← Galería, acordeón y media picker (admin)
-│       └── tailwind.js     ← (inactivo en producción)
+│   ├── css/
+│   │   └── admin.css            ← Estilos del admin (encolado)
+│   ├── js/
+│   │   ├── media.js             ← JS del admin: todos los campos interactivos
+│   │   └── gutenberg-panel.js   ← Panel sidebar Gutenberg (sin build step)
+│   └── libs/
+│       ├── select2/             ← Select2 v4.0.13 (local)
+│       └── leaflet/             ← Leaflet v1.9.4 (local)
 ├── docs/
-│   ├── roadmap.md          ← Cambios planificados por fase
-│   ├── mejoras.md          ← Ideas de evolución del framework
-│   └── issues-y-soluciones.md ← Problemas conocidos con solución concreta
+│   ├── roadmap.md
+│   ├── mejoras.md
+│   └── issues-y-soluciones.md
+├── languages/
+│   ├── coltman.pot
+│   ├── coltman-es_ES.po / .mo
+│   └── coltman-nl_NL.po / .mo
+├── tests/
+│   ├── bootstrap.php
+│   ├── TestCase.php
+│   ├── Stubs/wordpress.php
+│   └── Unit/
+│       ├── RegisterPostTest.php       (18 tests)
+│       ├── RegisterTaxonomyTest.php   (19 tests)
+│       ├── CreateMetaboxTest.php      (36 tests)
+│       ├── InputFieldsTest.php        (68 tests)
+│       ├── TermMetaTest.php           (26 tests)
+│       ├── UserMetaTest.php           (29 tests)
+│       └── Utils/
+│           ├── UtilsTest.php          (9 tests)
+│           ├── ReadTimeTest.php       (13 tests)
+│           └── NavigationsAnchorsTest.php (21 tests)
 └── utils/
-    ├── utils.php           ← Loader + helpers
-    ├── read-time.php       ← get_estimated_reading_time()
-    ├── navigations_archors.php ← Headings y tabla de contenidos
-    └── optimizations/
-        └── remove_scripts.php  ← Elimina jQuery Migrate
+    ├── utils.php
+    ├── read-time.php
+    ├── navigations_archors.php
+    └── optimizations/remove_scripts.php
 ```
 
 ---
 
-## 11. Notas de seguridad
+## 13. Seguridad
 
-El framework está funcional pero tiene aspectos de seguridad pendientes de reforzar para entornos de producción con múltiples editores. Ver detalle completo en `docs/issues-y-soluciones.md`.
+El framework implementa las siguientes medidas de seguridad:
 
-**Resumen de lo más importante:**
-
-- `ColtmanCreateMetabox::save_post()` no verifica nonce ni `current_user_can()`. Agregar ambas verificaciones antes de usar en sitios con múltiples usuarios con permisos de edición. Ver **ISSUE-01** y **ISSUE-02**.
-- `ColtmanTermMeta::wpturbo_save_meta_fields()` tampoco verifica permisos. Ver **ISSUE-03**.
-- El tipo `textarea` y los campos `text` no aplican sanitización en `save_post`. Usar `sanitize_text_field()` o `sanitize_textarea_field()` según el caso. Ver **ISSUE-02**.
-- `ColtmanCreateUserMeta` sí tiene verificación de permisos y sanitización completa — es el modelo a seguir para las demás clases.
+| Capa | Medida |
+|---|---|
+| `save_post` | Verificación de nonce + `current_user_can('edit_post')` |
+| `wpturbo_save_meta_fields` | `current_user_can('manage_categories')` |
+| `save_user_meta` | Nonce + `current_user_can('edit_user', $user_id)` |
+| AJAX | `check_ajax_referer()` + capacidad mínima en cada handler |
+| Salida HTML | `esc_html()`, `esc_attr()`, `esc_url()`, `esc_textarea()` en todos los renders |
+| Guardado texto | `sanitize_text_field()`, `sanitize_email()`, `esc_url_raw()` |
+| Guardado HTML | `wp_kses_post()` — permite HTML seguro, bloquea scripts |
+| Guardado editor | `wp_filter_post_kses()` |
+| Guardado mapa | Validación de rangos lat ±90 / lng ±180 |
+| XSS en labels | `esc_html()` en labels de campos; `esc_attr()` en atributos |
+| CSRF en group schema | Nonce `coltman_group_schema` + `manage_options` |
 
 ---
 
-## 12. Pruebas unitarias
+## 14. Pruebas unitarias
 
-El módulo incluye un sistema de pruebas con **PHPUnit 10** que no depende de una instalación WordPress — funciona con stubs PHP puros.
-
-### Requisitos
-
-- PHP 8.0+
-- Extensiones PHP: `dom`, `mbstring`, `xml`, `xmlwriter`
-
-### Instalación
+Suite PHPUnit 10 — no requiere WordPress instalado.
 
 ```bash
 cd classes/
 composer install
+php vendor/bin/phpunit
+# → OK (253 tests, 464 assertions)
 ```
 
-### Ejecución
-
-```bash
-# Desde la carpeta classes/
-php vendor/bin/phpunit --no-coverage
-```
-
-### Resultado esperado
-
-```
-OK (207 tests, 357 assertions)
-```
-
-### Estructura
-
-```
-tests/
-├── bootstrap.php            # Constantes WP, clases stub, carga de fuentes
-├── TestCase.php             # Clase base con helpers (spy, reflection, capture)
-├── Stubs/
-│   └── wordpress.php        # Stubs de todas las funciones WP usadas
-└── Unit/
-    ├── RegisterPostTest.php       # ColtmanRegisterPost      (18 tests)
-    ├── RegisterTaxonomyTest.php   # ColtmanRegisterTaxonomy  (19 tests)
-    ├── CreateMetaboxTest.php      # ColtmanCreateMetabox     (24 tests)
-    ├── InputFieldsTest.php        # ColtmanInputFields       (40 tests)
-    ├── TermMetaTest.php           # ColtmanTermMeta          (26 tests)
-    ├── UserMetaTest.php           # ColtmanCreateUserMeta    (27 tests)
-    └── Utils/
-        ├── UtilsTest.php               # coltman_trim_content_text_fn, formaturltext
-        ├── ReadTimeTest.php            # get_estimated_reading_time
-        └── NavigationsAnchorsTest.php  # process_headings_and_get_data, filter_content_inject_headings
-```
-
-### Sistema de spy
-
-Los tests usan un sistema de spy sin dependencias externas:
+### Sistema de spy — helpers disponibles
 
 ```php
-// En el test: forzar un valor de retorno
-$this->setStub('get_post_meta', 'stored_value');
+// Forzar retorno de una función WP
+$this->setStub('get_post_meta', 'valor_de_prueba');
 
-// Verificar que una función WP fue llamada
-$calls = $this->spyCalls('update_post_meta');
-$this->assertNotEmpty($calls);
-
-// Controlar contexto
+// Controlar flags de contexto
 $this->setFlag('is_admin', true);
 $this->setFlag('metadata_exists', true);
+$this->setFlag('current_user_can', false); // simular sin permisos
+
+// Verificar llamadas
+$calls = $this->spyCalls('update_post_meta');
+$this->assertNotEmpty($calls);
+$this->assertSame('mi_campo', $calls[0]['key']);
+
+// Capturar output de echo
+$html = $this->capture(fn() => $this->f->input(['id' => 'x', 'type' => 'text'], 'val'));
+$this->assertStringContainsString('value="val"', $html);
 ```

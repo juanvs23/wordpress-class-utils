@@ -84,7 +84,7 @@ class InputFieldsTest extends TestCase
     public function test_input_includes_pattern_when_provided(): void
     {
         $html = $this->capture(fn() => $this->f->input(['id' => 'f', 'type' => 'text', 'pattern' => '[0-9]+'], ''));
-        $this->assertStringContainsString("pattern='[0-9]+'", $html);
+        $this->assertStringContainsString('pattern="[0-9]+"', $html);
     }
 
     public function test_input_empty_value_by_default(): void
@@ -134,19 +134,19 @@ class InputFieldsTest extends TestCase
     public function test_input_minmax_includes_min_attribute(): void
     {
         $html = $this->capture(fn() => $this->f->input_minmax(['id' => 'n', 'type' => 'number', 'min' => '0']));
-        $this->assertStringContainsString("min='0'", $html);
+        $this->assertStringContainsString('min="0"', $html);
     }
 
     public function test_input_minmax_includes_max_attribute(): void
     {
         $html = $this->capture(fn() => $this->f->input_minmax(['id' => 'n', 'type' => 'number', 'max' => '100']));
-        $this->assertStringContainsString("max='100'", $html);
+        $this->assertStringContainsString('max="100"', $html);
     }
 
     public function test_input_minmax_includes_step_attribute(): void
     {
         $html = $this->capture(fn() => $this->f->input_minmax(['id' => 'n', 'type' => 'number', 'step' => '0.5']));
-        $this->assertStringContainsString("step='0.5'", $html);
+        $this->assertStringContainsString('step="0.5"', $html);
     }
 
     public function test_input_minmax_omits_absent_attributes(): void
@@ -304,31 +304,28 @@ class InputFieldsTest extends TestCase
         $this->assertStringContainsString('name="related[]"', $html);
     }
 
-    public function test_get_posts_disabled_when_no_posts_available(): void
+    public function test_get_posts_uses_ajax_select(): void
     {
-        $this->setStub('get_posts', []);
-
         $html = $this->capture(fn() => $this->f->get_posts([
             'id'        => 'related',
             'post_type' => 'page',
         ], '[]'));
 
-        $this->assertStringContainsString('disabled', $html);
-        $this->assertStringContainsString("Don't have posts available", $html);
+        $this->assertStringContainsString('js-relationship-select', $html);
+        $this->assertStringContainsString('data-post-type="page"', $html);
     }
 
-    public function test_get_posts_renders_options_from_results(): void
+    public function test_get_posts_prepopulates_selected_options(): void
     {
-        $post           = new \stdClass();
-        $post->ID       = 99;
+        $post            = new \stdClass();
+        $post->ID        = 99;
         $post->post_title = 'Sample Page';
-
-        $this->setStub('get_posts', [$post]);
+        $this->setStub('get_post', $post);
 
         $html = $this->capture(fn() => $this->f->get_posts([
             'id'        => 'related',
             'post_type' => 'page',
-        ], '[]'));
+        ], '[99]'));
 
         $this->assertStringContainsString('value="99"', $html);
         $this->assertStringContainsString('Sample Page', $html);
@@ -336,7 +333,7 @@ class InputFieldsTest extends TestCase
 
     // ── get_terms() ───────────────────────────────────────────────────────────
 
-    public function test_get_terms_outputs_select_element(): void
+    public function test_get_terms_renders_ajax_select(): void
     {
         $html = $this->capture(fn() => $this->f->get_terms([
             'id'       => 'tax_field',
@@ -344,52 +341,102 @@ class InputFieldsTest extends TestCase
         ]));
 
         $this->assertStringContainsString('<select', $html);
+        $this->assertStringContainsString('js-term-select', $html);
+        $this->assertStringContainsString('name="tax_field[]"', $html);  // default is multiple
+        $this->assertStringContainsString('data-taxonomy="category"', $html);
+        $this->assertStringContainsString('data-nonce=', $html);
     }
 
-    public function test_get_terms_disabled_and_placeholder_when_no_terms(): void
+    public function test_get_terms_is_multiple_by_default(): void
     {
-        $this->setStub('get_terms', []);
-
         $html = $this->capture(fn() => $this->f->get_terms([
             'id'       => 'tax_field',
             'taxonomy' => 'category',
         ]));
 
-        $this->assertStringContainsString('disabled', $html);
-        $this->assertStringContainsString("Don't have terms available", $html);
+        $this->assertStringContainsString('multiple="multiple"', $html);
+        $this->assertStringContainsString('name="tax_field[]"', $html);
+        $this->assertStringNotContainsString('data-allow-clear', $html);
     }
 
-    public function test_get_terms_renders_term_options(): void
+    public function test_get_terms_single_requires_explicit_false(): void
+    {
+        $html = $this->capture(fn() => $this->f->get_terms([
+            'id'       => 'tax_field',
+            'taxonomy' => 'category',
+            'multiple' => false,
+        ]));
+
+        $this->assertStringContainsString('data-allow-clear="1"', $html);
+        $this->assertStringNotContainsString('multiple=', $html);
+        $this->assertStringContainsString('name="tax_field"', $html);
+    }
+
+    public function test_get_terms_explicit_true_also_renders_multiple(): void
+    {
+        $html = $this->capture(fn() => $this->f->get_terms([
+            'id'       => 'tax_field',
+            'taxonomy' => 'category',
+            'multiple' => true,
+        ]));
+
+        $this->assertStringContainsString('multiple="multiple"', $html);
+        $this->assertStringContainsString('name="tax_field[]"', $html);
+    }
+
+    public function test_get_terms_accepts_comma_separated_taxonomies(): void
+    {
+        $html = $this->capture(fn() => $this->f->get_terms([
+            'id'       => 'tax_field',
+            'taxonomy' => 'category, post_tag',
+        ]));
+
+        $this->assertStringContainsString('data-taxonomy="category,post_tag"', $html);
+    }
+
+    public function test_get_terms_accepts_array_taxonomies(): void
+    {
+        $html = $this->capture(fn() => $this->f->get_terms([
+            'id'       => 'tax_field',
+            'taxonomy' => ['category', 'post_tag', 'tipo_de_joyeria'],
+        ]));
+
+        $this->assertStringContainsString('data-taxonomy="category,post_tag,tipo_de_joyeria"', $html);
+    }
+
+    public function test_get_terms_prepopulates_single_selected_term(): void
+    {
+        $term           = new \stdClass();
+        $term->term_id  = 5;
+        $term->name     = 'PHP';
+        $this->setStub('get_term', $term);
+
+        $html = $this->capture(fn() => $this->f->get_terms([
+            'id'       => 'tax_field',
+            'taxonomy' => 'category',
+        ], '5'));
+
+        $this->assertStringContainsString('value="5"', $html);
+        $this->assertStringContainsString('PHP', $html);
+        $this->assertStringContainsString('selected="selected"', $html);
+    }
+
+    public function test_get_terms_multiple_prepopulates_from_json(): void
     {
         $term           = new \stdClass();
         $term->term_id  = 7;
         $term->name     = 'JavaScript';
-
-        $this->setStub('get_terms', [$term]);
+        $this->setStub('get_term', $term);
 
         $html = $this->capture(fn() => $this->f->get_terms([
             'id'       => 'tax_field',
             'taxonomy' => 'category',
-        ]));
+            'multiple' => true,
+        ], json_encode([7])));
 
         $this->assertStringContainsString('value="7"', $html);
         $this->assertStringContainsString('JavaScript', $html);
-    }
-
-    public function test_get_terms_adds_select_a_term_placeholder(): void
-    {
-        $term          = new \stdClass();
-        $term->term_id = 1;
-        $term->name    = 'PHP';
-
-        $this->setStub('get_terms', [$term]);
-
-        $html = $this->capture(fn() => $this->f->get_terms([
-            'id'       => 'tax_field',
-            'taxonomy' => 'category',
-        ]));
-
-        $this->assertStringContainsString('Select a term', $html);
+        $this->assertStringContainsString('selected="selected"', $html);
     }
 
     // ── gallery_input() ───────────────────────────────────────────────────────
@@ -397,7 +444,7 @@ class InputFieldsTest extends TestCase
     public function test_gallery_input_outputs_gallery_wrapper(): void
     {
         $html = $this->capture(fn() => $this->f->gallery_input(['id' => 'gallery'], ''));
-        $this->assertStringContainsString('class="gallery"', $html);
+        $this->assertStringContainsString('coltman-gallery', $html);
         $this->assertStringContainsString('class="gallery-data"', $html);
     }
 
@@ -416,5 +463,250 @@ class InputFieldsTest extends TestCase
         $html = $this->capture(fn() => $this->f->gallery_input(['id' => 'gallery'], $value));
         $this->assertStringContainsString('https://example.com/img.jpg', $html);
         $this->assertStringContainsString('gallery-item', $html);
+    }
+
+    // ── color() ──────────────────────────────────────────────────────────────
+
+    public function test_color_renders_text_input_with_picker_class(): void
+    {
+        $html = $this->capture(fn() => $this->f->color(['id' => 'bg_color'], '#ff0000'));
+
+        $this->assertStringContainsString('<input', $html);
+        $this->assertStringContainsString('type="text"', $html);
+        $this->assertStringContainsString('coltman-color-picker', $html);
+        $this->assertStringContainsString('name="bg_color"', $html);
+        $this->assertStringContainsString('value="#ff0000"', $html);
+    }
+
+    public function test_color_uses_configured_default_swatch(): void
+    {
+        $html = $this->capture(fn() => $this->f->color(['id' => 'c', 'default' => '#336699']));
+        $this->assertStringContainsString('data-default-color="#336699"', $html);
+    }
+
+    public function test_color_defaults_to_white_when_no_default_key(): void
+    {
+        $html = $this->capture(fn() => $this->f->color(['id' => 'c']));
+        $this->assertStringContainsString('data-default-color="#ffffff"', $html);
+    }
+
+    // ── repeater() ───────────────────────────────────────────────────────────
+
+    public function test_repeater_renders_container_and_add_button(): void
+    {
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'my_repeater',
+            'sub_fields' => [['id' => 'name', 'label' => 'Name', 'type' => 'text']],
+        ], ''));
+
+        $this->assertStringContainsString('coltman-repeater', $html);
+        $this->assertStringContainsString('repeater-rows', $html);
+        $this->assertStringContainsString('Add Row', $html);
+    }
+
+    public function test_repeater_renders_one_empty_row_when_value_is_empty(): void
+    {
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'rp',
+            'sub_fields' => [['id' => 'title', 'label' => 'Title', 'type' => 'text']],
+        ], ''));
+
+        $this->assertStringContainsString('repeater-row', $html);
+        $this->assertStringContainsString('Row 1', $html);
+        $this->assertStringContainsString('name="rp[0][title]"', $html);
+    }
+
+    public function test_repeater_renders_rows_from_json_value(): void
+    {
+        $value = json_encode([
+            ['title' => 'First row',  'desc' => 'Alpha'],
+            ['title' => 'Second row', 'desc' => 'Beta'],
+        ]);
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'rp',
+            'sub_fields' => [
+                ['id' => 'title', 'label' => 'Title', 'type' => 'text'],
+                ['id' => 'desc',  'label' => 'Desc',  'type' => 'textarea'],
+            ],
+        ], $value));
+
+        $this->assertStringContainsString('Row 1', $html);
+        $this->assertStringContainsString('Row 2', $html);
+        $this->assertStringContainsString('value="First row"', $html);
+        $this->assertStringContainsString('Second row', $html);
+        $this->assertStringContainsString('name="rp[0][title]"', $html);
+        $this->assertStringContainsString('name="rp[1][title]"', $html);
+    }
+
+    public function test_repeater_sub_field_select_renders_options(): void
+    {
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'rp',
+            'sub_fields' => [[
+                'id'      => 'status',
+                'label'   => 'Status',
+                'type'    => 'select',
+                'options' => ['a' => 'Alpha', 'b' => 'Beta'],
+            ]],
+        ], ''));
+
+        $this->assertStringContainsString('<select', $html);
+        $this->assertStringContainsString('>Alpha<', $html);
+        $this->assertStringContainsString('>Beta<', $html);
+        $this->assertStringContainsString('name="rp[0][status]"', $html);
+    }
+
+    public function test_repeater_drag_handle_is_present(): void
+    {
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'rp',
+            'sub_fields' => [['id' => 'x', 'label' => 'X', 'type' => 'text']],
+        ], ''));
+
+        $this->assertStringContainsString('repeater-drag-handle', $html);
+    }
+
+    public function test_repeater_remove_button_is_present(): void
+    {
+        $html = $this->capture(fn() => $this->f->repeater([
+            'id'         => 'rp',
+            'sub_fields' => [['id' => 'x', 'label' => 'X', 'type' => 'text']],
+        ], ''));
+
+        $this->assertStringContainsString('removeRepeaterRow(this)', $html);
+    }
+
+    // ── relationship() ───────────────────────────────────────────────────────
+
+    public function test_relationship_renders_select_with_ajax_attributes(): void
+    {
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'        => 'related_posts',
+            'post_type' => 'page',
+        ], '[]'));
+
+        $this->assertStringContainsString('<select', $html);
+        $this->assertStringContainsString('js-relationship-select', $html);
+        $this->assertStringContainsString('name="related_posts[]"', $html);
+        $this->assertStringContainsString('data-post-type="page"', $html);
+        $this->assertStringContainsString('data-nonce=', $html);
+        $this->assertStringContainsString('multiple="multiple"', $html);
+    }
+
+    public function test_relationship_pre_populates_selected_options(): void
+    {
+        $post             = new \stdClass();
+        $post->ID         = 42;
+        $post->post_title = 'About Us';
+        $this->setStub('get_post', $post);
+
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'        => 'related_posts',
+            'post_type' => 'page',
+        ], json_encode([42])));
+
+        $this->assertStringContainsString('value="42"', $html);
+        $this->assertStringContainsString('About Us', $html);
+        $this->assertStringContainsString('selected="selected"', $html);
+    }
+
+    public function test_relationship_uses_custom_placeholder(): void
+    {
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'          => 'rel',
+            'post_type'   => 'post',
+            'placeholder' => 'Find a post…',
+        ], '[]'));
+
+        $this->assertStringContainsString('data-placeholder="Find a post…"', $html);
+    }
+
+    public function test_relationship_nonce_is_present_in_data_attribute(): void
+    {
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'        => 'rel',
+            'post_type' => 'post',
+        ], '[]'));
+
+        // wp_create_nonce stub returns 'test_nonce_coltman_relationship'
+        $this->assertStringContainsString('data-nonce="test_nonce_coltman_relationship"', $html);
+    }
+
+    public function test_relationship_accepts_comma_separated_post_types(): void
+    {
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'        => 'rel',
+            'post_type' => 'post, page',
+        ], '[]'));
+
+        $this->assertStringContainsString('data-post-type="post,page"', $html);
+    }
+
+    public function test_relationship_accepts_array_post_types(): void
+    {
+        $html = $this->capture(fn() => $this->f->relationship([
+            'id'        => 'rel',
+            'post_type' => ['post', 'page', 'joyas_a_medida'],
+        ], '[]'));
+
+        $this->assertStringContainsString('data-post-type="post,page,joyas_a_medida"', $html);
+    }
+
+    // ── Map ──────────────────────────────────────────────────────────────────
+
+    public function test_map_renders_hidden_input_with_value(): void
+    {
+        $value = '{"lat":40.4168,"lng":-3.7038,"zoom":12}';
+        $html  = $this->capture(fn() => $this->f->map(['id' => 'location'], $value));
+        $this->assertStringContainsString('type="hidden"', $html);
+        $this->assertStringContainsString('id="location"', $html);
+        $this->assertStringContainsString('name="location"', $html);
+        $this->assertStringContainsString(esc_attr($value), $html);
+    }
+
+    public function test_map_renders_container_with_data_attributes(): void
+    {
+        $html = $this->capture(fn() => $this->f->map([
+            'id'   => 'loc',
+            'zoom' => 15,
+        ], '{"lat":51.5074,"lng":-0.1278,"zoom":15}'));
+
+        $this->assertStringContainsString('class="coltman-map-container"', $html);
+        $this->assertStringContainsString('id="map-loc"', $html);
+        $this->assertStringContainsString('data-field="loc"', $html);
+        $this->assertStringContainsString('data-lat="51.5074"', $html);
+        $this->assertStringContainsString('data-lng="-0.1278"', $html);
+        $this->assertStringContainsString('data-zoom="15"', $html);
+    }
+
+    public function test_map_renders_empty_when_no_value(): void
+    {
+        $html = $this->capture(fn() => $this->f->map(['id' => 'loc'], ''));
+        $this->assertStringContainsString('data-lat=""', $html);
+        $this->assertStringContainsString('data-lng=""', $html);
+        $this->assertStringContainsString('data-zoom="13"', $html);
+    }
+
+    public function test_map_renders_lat_lng_readonly_inputs(): void
+    {
+        $html = $this->capture(fn() => $this->f->map([
+            'id' => 'coords',
+        ], '{"lat":48.8566,"lng":2.3522,"zoom":10}'));
+
+        $this->assertStringContainsString('class="coltman-map-lat small-text"', $html);
+        $this->assertStringContainsString('class="coltman-map-lng small-text"', $html);
+        $this->assertStringContainsString('readonly', $html);
+    }
+
+    public function test_map_renders_clear_button(): void
+    {
+        $html = $this->capture(fn() => $this->f->map(['id' => 'loc'], ''));
+        $this->assertStringContainsString('class="button coltman-map-clear"', $html);
+    }
+
+    public function test_map_uses_field_zoom_as_default_when_no_value(): void
+    {
+        $html = $this->capture(fn() => $this->f->map(['id' => 'loc', 'zoom' => 8], ''));
+        $this->assertStringContainsString('data-zoom="8"', $html);
     }
 }

@@ -41,20 +41,19 @@ Estos cambios deben aplicarse antes de usar el framework en entornos de producci
 
 ---
 
-## Fase 3 — Nuevos tipos de campo
+## ✅ Fase 3 — Nuevos tipos de campo — COMPLETADA (v1.10.0)
 
-### 3.1 Implementar el campo `repeater`
-**Estado actual:** `ColtmanCreateMetabox::field()` tiene el case `repeater` comentado. `ColtmanInputFields` no tiene el método.  
-**Cambio:** Implementar `ColtmanInputFields::repeater($field, $value)` con la misma arquitectura que `accordion` (JSON en campo hidden, ítems dinámicos via JS). La diferencia con `accordion` es que el repeater tendría sub-campos configurables.
+### ✅ 3.1 Implementar el campo `repeater` — RESUELTO (v1.7.0)
+**Solución aplicada:** `ColtmanInputFields::repeater()` con sub-campos configurables por fila (JSON). Tipos de sub-campo: `text`, `textarea`, `select`, `checkbox`, `color`, `email`, `url`. Drag-and-drop con jQuery UI Sortable. JS `addRepeaterRow()` / `removeRepeaterRow()` en `media.js`. Sanitización por tipo de sub-campo en `save_post()` y `wpturbo_save_meta_fields()`.
 
-### 3.2 Campo `color`
-Usar el `wp-color-picker` que ya se encola en `admin_enqueue_scripts`. Agregar el tipo `color` en `ColtmanInputFields` y el handler de init del picker en `media.js`.
+### ✅ 3.2 Campo `color` — RESUELTO (v1.7.0)
+**Solución aplicada:** `ColtmanInputFields::color()` — `<input type="text">` con clase `coltman-color-picker` inicializado por `wp-color-picker` en `$(document).ready`. Atributo `data-default-color` configurable. Sanitización con `sanitize_text_field()`.
 
-### 3.3 Campo `relationship` (relación entre posts)
-Similar a `get_posts` pero con búsqueda en tiempo real (AJAX) para catálogos grandes. Útil cuando hay cientos de posts y el select múltiple se vuelve inmanejable.
+### ✅ 3.3 Campo `relationship` (relación entre posts) — RESUELTO (v1.7.0)
+**Solución aplicada:** `ColtmanInputFields::relationship()` — `<select multiple>` con Select2 AJAX. Handler `wp_ajax_coltman_relationship_search` en `ajax.php` (nuevo archivo). Búsqueda paginada (20/página), nonce `coltman_relationship` embebido en `data-nonce`. Pre-popula opciones desde JSON al renderizar.
 
-### 3.4 Campo `wysiwyg` como alias de `editor`
-Alias más intuitivo que `editor` para quienes vienen de ACF.
+### ✅ 3.4 Campo `wysiwyg` como alias de `editor` — RESUELTO (v1.7.0)
+**Solución aplicada:** `ColtmanInputFields::wysiwyg()` llama directamente a `$this->editor()`. Añadido en el `switch` de `field()` en `ColtmanCreateMetabox` y `wpturbo_render_input_field()` en `ColtmanTermMeta`.
 
 
 ### ✅ 3.5 Select2 para `get_posts` y `get_terms` — RESUELTO (v1.5.0)
@@ -66,16 +65,24 @@ Alias más intuitivo que `editor` para quienes vienen de ACF.
 ### ✅ 3.7 Drag-and-drop para reordenar ítems del `accordion` — RESUELTO (v1.5.0)
 **Implementación:** handle de arrastre (icono grip) en cada ítem; jQuery UI Sortable (ya incluido en WP admin) con `handle: '.accordion-drag-handle'`. El orden se persiste automáticamente al enviar el formulario: el handler `document.submit` reconstruye el JSON desde el orden DOM actual.
 
+### ✅ 3.8 Campo `group` — card colapsable con layout `<th>`/`<td>` — RESUELTO (v1.8.0)
+**Diseño final:** Una única `<tr>` donde `<th>` contiene el label del grupo + botón toggle (▲/▼), y `<td>` apila todos los sub-campos definidos en código. Los sub-campos se guardan en meta keys individuales (no JSON). El toggle colapsa/expande `div.coltman-group-body` vía JS. Disponible en metabox y term-meta.
+
+### ✅ 3.9 Campo `group` — constructor de campos dinámicos sin código — RESUELTO (v1.9.0)
+**Implementación:** Panel ⚙ "Manage fields" al pie de cada grupo que permite al administrador añadir o eliminar sub-campos sin tocar PHP. El esquema (tipo, clave, etiqueta) se persiste en `wp_options` (`_coltman_group_schema_{id}`) y es global para todos los posts/términos que usen ese grupo. Los campos dinámicos se renderizan después de los estáticos (prioridad al estático en caso de colisión de clave) y sus valores se guardan en meta keys individuales. Tipos de campo disponibles: `text`, `textarea`, `number`, `email`, `url`. Cambios de esquema via AJAX (`coltman_add_group_field`, `coltman_remove_group_field`) con nonce `coltman_group_schema` y capacidad `manage_options`.
+
+### ✅ 3.10 Campo `map` — selector de coordenadas (Leaflet) — RESUELTO (v1.10.0)
+**Implementación:** `ColtmanInputFields::map()` renderiza un mapa Leaflet interactivo en el admin: marcador draggable, click-para-colocar, botón Clear, inputs readonly de lat/lng. Guarda `{"lat":…,"lng":…,"zoom":…}` como JSON en una sola meta key. Leaflet 1.9.4 incluido localmente en `assets/libs/leaflet/` (sin CDN externo). `wp_localize_script` pasa `coltmanVars.assetsUrl` al JS para resolver las rutas de los iconos del marcador. El helper `coltmanLeafletIcon()` elimina `L.Icon.Default.prototype._getIconUrl` y construye un `L.icon({...})` explícito con rutas absolutas, resolviendo el problema conocido de iconos rotos en entornos con rutas de assets no estándar. Disponible en metabox y term-meta.
+
 ---
 
-## Fase 4 — Soporte para el editor de bloques (Gutenberg)
+## ✅ Fase 4 — Soporte para el editor de bloques (Gutenberg) — COMPLETADA (v1.11.0)
 
-### 4.1 Registrar meta con `show_in_rest: true`
-Los metaboxes clásicos no aparecen en el editor de bloques por defecto. Para exponer los campos en Gutenberg, registrar cada campo con `register_post_meta()` y `show_in_rest: true`.  
-**Cambio:** `ColtmanCreateMetabox` debería aceptar una opción `rest: true` en el campo y auto-registrar el meta.
+### ✅ 4.1 Registrar meta con `show_in_rest: true` — RESUELTO (v1.11.0)
+**Solución aplicada:** Nuevo método `register_rest_meta()` en `ColtmanCreateMetabox`, llamado en el hook `init`. Cualquier campo con `'rest' => true` en su configuración se registra automáticamente con `register_post_meta()` (`show_in_rest: true`, `single: true`, tipo REST mapeado por `rest_field_type()`). No rompe classic themes: el hook se registra pero no tiene efecto si no hay campos marcados con `rest`.
 
-### 4.2 Panel lateral en Gutenberg (PluginDocumentSettingPanel)
-Para una integración nativa con el editor de bloques, crear un componente JS que lea los meta registrados y los muestre en el panel lateral sin depender del metabox clásico.
+### ✅ 4.2 Panel lateral en Gutenberg (`PluginDocumentSettingPanel`) — RESUELTO (v1.11.0)
+**Solución aplicada:** `enqueue_gutenberg_panel()` encola `assets/js/gutenberg-panel.js` solo cuando la pantalla actual coincide con un CPT del metabox y hay campos `rest: true`. El script usa `wp.element.createElement` (sin JSX ni build step) y registra un `PluginDocumentSettingPanel` con controles interactivos para tipos simples (`text`, `email`, `url`, `number`, `textarea`, `select`, `checkbox`) y un aviso informativo para tipos complejos (`gallery`, `repeater`, `relationship`, `group`, `map`). Completamente compatible con classic themes — sin efecto si el editor de bloques no está activo.
 
 ---
 
@@ -116,18 +123,18 @@ require '.../classes/class.php';
 |---|---|---|
 | `RegisterPostTest` | `ColtmanRegisterPost` | 18 |
 | `RegisterTaxonomyTest` | `ColtmanRegisterTaxonomy` | 19 |
-| `CreateMetaboxTest` | `ColtmanCreateMetabox` | 24 |
-| `InputFieldsTest` | `ColtmanInputFields` | 40 |
+| `CreateMetaboxTest` | `ColtmanCreateMetabox` | 30 |
+| `InputFieldsTest` | `ColtmanInputFields` | 59 |
 | `TermMetaTest` | `ColtmanTermMeta` | 26 |
 | `UserMetaTest` | `ColtmanCreateUserMeta` | 27 |
 | `UtilsTest` | `coltman_trim_content_text_fn`, `formaturltext` | 9 |
 | `ReadTimeTest` | `get_estimated_reading_time` | 13 |
 | `NavigationsAnchorsTest` | heading injection functions | 21 |
-| **Total** | | **207 tests / 357 assertions** |
+| **Total** | | **250 tests / 457 assertions** |
 
 ```bash
 cd classes/ && php vendor/bin/phpunit --no-coverage
-# → OK (207 tests, 357 assertions)
+# → OK (250 tests, 457 assertions)
 ```
 
 **Bug corregido durante la implementación:** `ceil()` devuelve `float` en PHP 8+. La comparación estricta `$reading_time === 1` en `read-time.php` siempre era `false`, causando que el sufijo singular nunca se usara. Corregido con `(int) ceil(...)`.
