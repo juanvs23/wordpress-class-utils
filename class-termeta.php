@@ -145,8 +145,8 @@ if (!class_exists('ColtmanTermMeta')) {
                 wp_enqueue_media();
                 wp_enqueue_script( 'wp-color-picker' );
                 wp_enqueue_style( 'wp-color-picker' );
-                wp_register_style( 'select2css', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.css', false, '4.0.13', 'all' );
-                wp_register_script( 'select2', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.js', [ 'jquery' ], '4.0.13', true );
+                wp_register_style( 'select2css', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.css', false, '4.1.0', 'all' );
+                wp_register_script( 'select2', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.js', [ 'jquery' ], '4.1.0', true );
                 wp_enqueue_style( 'select2css' );
                 wp_enqueue_style( 'coltman-admin', COLTMAN_ASSETS_URL . '/css/admin.css', [], '1.6.0' );
                 wp_enqueue_script( 'select2' );

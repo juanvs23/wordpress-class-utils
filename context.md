@@ -71,7 +71,7 @@ classes/
 │   │   ├── media.js                  ← JS del admin: todos los campos interactivos
 │   │   └── gutenberg-panel.js        ← Panel lateral Gutenberg (sin build step)
 │   └── libs/
-│       ├── select2/                  ← Select2 v4.0.13 (local, sin CDN)
+│       ├── select2/                  ← Select2 v4.1.0 (local, sin CDN)
 │       │   ├── select2.min.css
 │       │   └── select2.min.js
 │       └── leaflet/                  ← Leaflet v1.9.4 (local, sin CDN)
@@ -229,7 +229,7 @@ new ColtmanCreateMetabox([
 
 ### Assets encolados
 
-- `select2` v4.0.13 (local), `wp-color-picker`, `jquery-ui-sortable`
+- `select2` v4.1.0 (local), `wp-color-picker`, `jquery-ui-sortable`
 - `leaflet` v1.9.4 (local)
 - `coltman-admin` CSS (`assets/css/admin.css`)
 - `coltman-media` JS (`assets/js/media.js`)

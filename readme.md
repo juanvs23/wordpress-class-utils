@@ -1512,7 +1512,7 @@ classes/
 │   │   ├── media.js             ← JS del admin: todos los campos interactivos
 │   │   └── gutenberg-panel.js   ← Panel sidebar Gutenberg (sin build step)
 │   └── libs/
-│       ├── select2/             ← Select2 v4.0.13 (local)
+│       ├── select2/             ← Select2 v4.1.0 (local)
 │       └── leaflet/             ← Leaflet v1.9.4 (local)
 ├── docs/
 │   ├── roadmap.md

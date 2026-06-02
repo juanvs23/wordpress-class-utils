@@ -6,6 +6,16 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.15.3] — 2026-06-02
+
+### Cambiado — Select2 actualizado de v4.0.13 a v4.1.0
+
+- **`assets/libs/select2/`**: `select2.min.js` y `select2.min.css` reemplazados por los archivos de la versión 4.1.0. Descargados desde jsDelivr.
+- **`class-metabox.php`**, **`class-termeta.php`**, **`class-usermetabox.php`**: version string en `wp_register_style`/`wp_register_script` actualizado a `'4.1.0'`.
+- **Compatibilidad verificada:** `media.js` usa solo API estándar v4 (`placeholder`, `allowClear`, `ajax.processResults`) — no requirió cambios de código. Los breaking changes de 4.1.0 (renombre de `containerCssClass` a `selectionCssClass`, eliminación de `initSelection`/`query`) no afectan al framework.
+
+---
+
 ## [1.15.2] — 2026-06-01
 
 ### Cambiado — rediseño visual de `accordion` y `repeater` (`admin.css`)
