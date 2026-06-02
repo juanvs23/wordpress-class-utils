@@ -125,8 +125,11 @@ if (!class_exists('ColtmanTermMeta')) {
                     continue;
                 }
                 $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value, $term->term_id );
-                $label = "<label class='font-bold' for='" . esc_attr( $field_id ) . "'>" . esc_html( $field['label'] ) . "</label>";
-                $html .= $this->wpturbo_format_field( $label, $field_html );
+                $label  = '<label for="' . esc_attr( $field_id ) . '">' . esc_html( $field['label'] ) . '</label>';
+                $html  .= '<tr class="form-field term-' . esc_attr( $field_id ) . '-wrap">';
+                $html  .= '<th scope="row">' . $label . '</th>';
+                $html  .= '<td>' . $field_html . '</td>';
+                $html  .= '</tr>';
             }
             echo $html;
         }
@@ -243,6 +246,16 @@ if (!class_exists('ColtmanTermMeta')) {
                 case 'map':
                     $this->coltmanInputs->map( $field, $field_value );
                     break;
+                case 'get_terms':
+                    $this->coltmanInputs->get_terms( $field, $field_value );
+                    break;
+                case 'get_posts':
+                    $this->coltmanInputs->get_posts( $field, $field_value );
+                    break;
+                case 'checkbox':
+                    $chk = $field_value === 'on' ? 'checked' : '';
+                    $this->coltmanInputs->checkbox( $field, $chk );
+                    break;
                 default:
                     $this->coltmanInputs->input( $field, $field_value );
             }
@@ -357,6 +370,9 @@ if (!class_exists('ColtmanTermMeta')) {
                         update_term_meta( $term_id, $_alt_k,
                             sanitize_text_field( isset( $_POST[ $_alt_k ] ) ? (string) $_POST[ $_alt_k ] : '' ) );
                         continue 2;
+                    case 'editor':
+                        $sanitized = wp_filter_post_kses( (string) $_POST[ $field_id ] );
+                        break;
                     case 'gallery':
                     case 'accordion':
                     case 'list':
@@ -407,6 +423,12 @@ if (!class_exists('ColtmanTermMeta')) {
                         } else {
                             $sanitized = isset( $_POST[ $field_id ] ) ? sanitize_text_field( $_POST[ $field_id ] ) : '';
                         }
+                        break;
+                    case 'get_posts':
+                        $sanitized = json_encode( isset( $_POST[ $field_id ] ) ? (array) $_POST[ $field_id ] : [] );
+                        break;
+                    case 'checkbox':
+                        $sanitized = isset( $_POST[ $field_id ] ) && $_POST[ $field_id ] === 'on' ? 'on' : '';
                         break;
                     case 'group':
                         $all_sub_fields = isset( $field['fields'] ) ? $field['fields'] : [];
