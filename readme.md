@@ -1,6 +1,6 @@
 # Framework Coltman — Guía completa
 
-> **Versión 1.14.0** — Reemplaza ACF sin dependencias externas ni licencias Pro.
+> **Versión 1.15.4** — Reemplaza ACF sin dependencias externas ni licencias Pro.
 
 Módulo PHP reutilizable para WordPress que registra Custom Post Types, taxonomías, metaboxes con campos personalizados, meta de términos y meta de usuario. Se distribuye como sub-repositorio git independiente — copia la carpeta `classes/` y funciona.
 
@@ -634,7 +634,7 @@ Editor WYSIWYG propio (contenteditable) con soporte HTML completo, drag & drop y
 ```json
 [
   {"id": "faqs_1234_parent", "title": "¿Cuánto tarda?",
-   "content": "<p>Entre <strong>2 y 4 semanas</strong>.</p>", "image": ""}
+   "content": "<p>Entre <strong>2 y 4 semanas</strong>.</p>", "image": "", "alt": ""}
 ]
 ```
 

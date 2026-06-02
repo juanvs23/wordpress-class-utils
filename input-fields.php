@@ -514,13 +514,14 @@ if(!class_exists('ColtmanInputFields')){
                             $title   = $item->title;
                             $content = $item->content;
                             $image   = $item->image;
+                            $alt     = $item->alt ?? '';
                             $id_base = str_replace( '_parent', '', $id );
                         ?>
                         <div data-id="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $id ); ?>"
                              class="accordion-item flex items-center justify-between gap-2 bg-slate-100 p-4">
                             <div class="w-10/12 accodeon-item-content flex flex-col gap-2">
                                 <h3 style="margin:0 0 4px"><?php echo esc_html( $field['label'] . ' item' ); ?></h3>
-                                <?php if ( $have_image ) : $this->media( [ 'id' => $id_base . '_image', 'type' => 'media', 'class' => 'image-url-accodeon', 'button-text' => 'Upload', 'return' => 'url', 'default' => '' ], $image ); endif; ?>
+                                <?php if ( $have_image ) : $this->media( [ 'id' => $id_base . '_image', 'type' => 'media', 'class' => 'image-url-accodeon', 'button-text' => 'Upload', 'return' => 'url', 'default' => '', '_alt_value' => $alt ], $image ); endif; ?>
                                 <input type="text" class="regular-text block w-full min-h-10 rounded input-title" id="<?php echo $id_base . '-title'; ?>" value="<?php echo esc_attr( $title ); ?>" placeholder="<?php esc_attr_e( 'Title', COLTMAN_TEXT_DOMAIN ); ?>">
                                 <?php $this->accordion_editor( $id_base . '_content', $content ); ?>
                             </div>

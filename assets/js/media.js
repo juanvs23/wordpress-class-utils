@@ -133,6 +133,8 @@ jQuery.noConflict();
                     const inputItem    = imageItem.querySelector('.image-url');
                     const altInput     = imageItem.querySelector('.image-alt');
                     const dataItem     = galleryItem.dataset.item;
+                    // Set the URL from attachment
+                    inputItem.value = attachment.url || '';
                     // Pre-fill alt from attachment; user can override via the alt input
                     if (altInput && !altInput.value) altInput.value = attachment.alt || '';
                     const altValue = altInput ? altInput.value : (attachment.alt || '');
@@ -706,6 +708,35 @@ document.addEventListener('blur', function(e) {
     }
 }, true);
 
+// When any accordion title changes, persist the item to the hidden input immediately.
+// This covers the "first item, submit without Add Row" case where the submit handler
+// might not fire (e.g. some WP "Add New" term pages).
+document.addEventListener('change', function(e) {
+    const titleEl = e.target.closest('.accordion-item .input-title');
+    if (!titleEl) return;
+    const accordion = titleEl.closest('.accordion');
+    if (!accordion) return;
+    const hiddenInput = accordion.querySelector('input[type="hidden"]');
+    if (!hiddenInput) return;
+    var data = [];
+    accordion.querySelectorAll('.accordion-item').forEach(function(item) {
+        var te = item.querySelector('.input-title');
+        var ce = item.querySelector('.input-content');
+        var ie = item.querySelector('.image-url-accodeon');
+        var ae = item.querySelector('.coltman-media-alt');
+        var t  = te ? te.value.trim() : '';
+        if (!t) return;
+        data.push({
+            id:      item.id,
+            title:   t,
+            content: ce ? ce.value : '',
+            image:   ie ? ie.value : '',
+            alt:     ae ? ae.value : '',
+        });
+    });
+    hiddenInput.value = JSON.stringify(data);
+});
+
 // On form submit: sync all wysiwyg bodies, then rebuild every accordion's hidden JSON
 // from the current DOM so unsaved rows are always included.
 document.addEventListener('submit', function() {
@@ -719,6 +750,7 @@ document.addEventListener('submit', function() {
             const titleEl   = item.querySelector('.input-title');
             const contentEl = item.querySelector('.input-content');
             const imageEl   = item.querySelector('.image-url-accodeon');
+            const altInput  = item.querySelector('.coltman-media-alt');
             const title     = titleEl ? titleEl.value.trim() : '';
             if (!title) return;
             data.push({
@@ -726,6 +758,7 @@ document.addEventListener('submit', function() {
                 title:   title,
                 content: contentEl ? contentEl.value : '',
                 image:   imageEl   ? imageEl.value   : '',
+                alt:     altInput  ? altInput.value  : '',
             });
         });
         hiddenInput.value = JSON.stringify(data);
@@ -846,11 +879,22 @@ function cloneElement(parentElment) {
     const newContentId = baseId + '_' + rand + '_content';
     baseItem.id = newItemId;
 
-    // Clear title and image
+    // Clear title
     const titleEl = baseItem.querySelector('.input-title');
     if (titleEl) titleEl.value = '';
-    const imageEl = baseItem.querySelector('.image-url-accodeon');
-    if (imageEl) imageEl.value = '';
+    // Reset the entire media field inside the cloned item (thumbnail, inputs, buttons)
+    baseItem.querySelectorAll('.coltman-media').forEach(function(mediaWrap) {
+        var urlInput = mediaWrap.querySelector('.coltman-media-url');
+        if (urlInput) urlInput.value = '';
+        var altInput = mediaWrap.querySelector('.coltman-media-alt');
+        if (altInput) altInput.value = '';
+        var thumb = mediaWrap.querySelector('.coltman-media-thumb');
+        if (thumb) { thumb.src = ''; thumb.classList.remove('has-image'); }
+        var placeholder = mediaWrap.querySelector('.coltman-media-placeholder');
+        if (placeholder) placeholder.style.display = '';
+        var clearBtn = mediaWrap.querySelector('.coltman-media-clear');
+        if (clearBtn) clearBtn.classList.add('hidden');
+    });
 
     // Update contenteditable wysiwyg: clear content, rewire sync target
     const wysiwygWrap = baseItem.querySelector('.coltman-wysiwyg');
@@ -875,7 +919,31 @@ function cloneElement(parentElment) {
 
 // "Add Row" button handler
 function addAccordeonItem(e) {
-    cloneElement(e.parentNode.parentNode);
+    const accordion = e.parentNode.parentNode;
+    // Persist any existing items to the hidden input before adding a new row,
+    // so data is not lost even if the global submit handler doesn't fire
+    // (e.g. on the WP "Add New Term" page where form submission may differ).
+    const hiddenInput = accordion.querySelector('input[type="hidden"]');
+    if (hiddenInput) {
+        var existing = [];
+        accordion.querySelectorAll('.accordion-item').forEach(function(item) {
+            var te = item.querySelector('.input-title');
+            var ce = item.querySelector('.input-content');
+            var ie = item.querySelector('.image-url-accodeon');
+            var ae = item.querySelector('.coltman-media-alt');
+            var t  = te ? te.value.trim() : '';
+            if (!t) return;
+            existing.push({
+                id:      item.id,
+                title:   t,
+                content: ce ? ce.value : '',
+                image:   ie ? ie.value : '',
+                alt:     ae ? ae.value : '',
+            });
+        });
+        if (existing.length) hiddenInput.value = JSON.stringify(existing);
+    }
+    cloneElement(accordion);
 }
 
 // Removes an accordion item (or clears it if it's the only one)
@@ -893,10 +961,12 @@ function removeAccordeonItem(e) {
     } else {
         const titleEl     = item.querySelector('.input-title');
         const imageEl     = item.querySelector('.image-url-accodeon');
+        const altInput    = item.querySelector('.coltman-media-alt');
         const contentEl   = item.querySelector('.input-content');
         const wysiwygBody = item.querySelector('.coltman-wysiwyg-body');
         if (titleEl)     titleEl.value     = '';
         if (imageEl)     imageEl.value     = '';
+        if (altInput)    altInput.value    = '';
         if (contentEl)   contentEl.value   = '';
         if (wysiwygBody) wysiwygBody.innerHTML = '';
     }
@@ -912,6 +982,7 @@ function saveAccordeonItemData(e) {
     const titleEl     = item.querySelector('.input-title');
     const contentEl   = item.querySelector('.input-content');
     const imageEl     = item.querySelector('.image-url-accodeon');
+    const altInput    = item.querySelector('.coltman-media-alt');
     const wysiwygBody = item.querySelector('.coltman-wysiwyg-body');
     const itemId      = item.id;
 
@@ -923,17 +994,19 @@ function saveAccordeonItemData(e) {
 
     const contentValue = contentEl ? contentEl.value : '';
     const imageVal     = imageEl   ? imageEl.value   : '';
+    const altVal       = altInput  ? altInput.value  : '';
 
     const isDuplicate = postAccordeonData.some((i) =>
         i.id      === itemId       &&
         i.title   === titleValue   &&
         i.content === contentValue &&
-        i.image   === imageVal
+        i.image   === imageVal    &&
+        i.alt     === altVal
     );
     if (isDuplicate) return true;
 
     const existingIndex = postAccordeonData.findIndex((i) => i.id === itemId);
-    const newData = { id: itemId, title: titleValue, content: contentValue, image: imageVal };
+    const newData = { id: itemId, title: titleValue, content: contentValue, image: imageVal, alt: altVal };
 
     if (existingIndex !== -1) {
         postAccordeonData[existingIndex] = newData;

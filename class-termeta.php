@@ -204,6 +204,10 @@ if (!class_exists('ColtmanTermMeta')) {
 
             ob_start();
             switch ( $field['type'] ) {
+                case 'checkbox':
+                    $checked = $field_value === 'on' || ! empty( $field['checked'] ) ? 'checked' : '';
+                    $this->coltmanInputs->checkbox( $field, $checked );
+                    break;
                 case 'select':
                     $this->coltmanInputs->select( $field, $field_value );
                     break;
@@ -237,7 +241,11 @@ if (!class_exists('ColtmanTermMeta')) {
                 case 'repeater':
                     $this->coltmanInputs->repeater( $field, $field_value );
                     break;
+                case 'get_terms':
+                    $this->coltmanInputs->get_terms( $field, $field_value );
+                    break;
                 case 'relationship':
+                case 'get_posts':
                     $this->coltmanInputs->relationship( $field, $field_value );
                     break;
                 case 'map':
@@ -336,14 +344,21 @@ if (!class_exists('ColtmanTermMeta')) {
             if ( ! current_user_can( 'manage_categories' ) ) return;
 
             foreach ( $this->fields as $field_id => $field ) {
-                if ( ! isset( $_POST[ $field_id ] ) ) continue;
+                // Checkboxes need to save '' when unchecked (POST field absent).
+                if ( $field['type'] !== 'checkbox' && ! isset( $_POST[ $field_id ] ) ) continue;
 
                 switch ( $field['type'] ) {
+                    case 'checkbox':
+                        $sanitized = isset( $_POST[ $field_id ] ) ? sanitize_text_field( $_POST[ $field_id ] ) : '';
+                        break;
                     case 'email':
                         $sanitized = sanitize_email( $_POST[ $field_id ] );
                         break;
                     case 'textarea':
                         $sanitized = wp_kses_post( $_POST[ $field_id ] );
+                        break;
+                    case 'editor':
+                        $sanitized = wp_filter_post_kses( $_POST[ $field_id ] );
                         break;
                     case 'url':
                         $sanitized = esc_url_raw( $_POST[ $field_id ] );
@@ -379,6 +394,7 @@ if (!class_exists('ColtmanTermMeta')) {
                         }
                         continue 2;
                     case 'relationship':
+                    case 'get_posts':
                         $sanitized = json_encode( (array) $_POST[ $field_id ] );
                         break;
                     case 'repeater':

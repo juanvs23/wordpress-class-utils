@@ -6,7 +6,52 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
-## [1.15.3] — 2026-06-02
+## [1.15.4] — 2026-06-02
+
+### Corregido — Gallery: `inputItem.value` no se asignaba al seleccionar imagen
+
+- **`assets/js/media.js`**: en el handler de selección de la media picker (gallery), se agregó `inputItem.value = attachment.url || ''` para que la miniatura y el JSON guardado reciban la URL correctamente.
+- **Síntoma**: al seleccionar una imagen desde la librería, el input de URL quedaba vacío y el JSON perdía la referencia a la imagen.
+
+### Corregido — Accordion: clone no reseteaba completamente el campo media
+
+- **`assets/js/media.js`** → `cloneElement()`: se reemplazó el simple `imageEl.value = ''` por un reseteo completo de `.coltman-media` (src del thumbnail, placeholder, clases, alt, botón clear).
+- **Síntoma**: al clonar un ítem del accordion, el nuevo ítem heredaba visualmente la imagen del original.
+
+### Corregido — Accordion: alt text no se guardaba ni renderizaba
+
+- **`input-fields.php`** → `accordion()`: se agregó `$alt = $item->alt ?? ''` y se pasa como `'_alt_value'` al método `media()`.
+- **`assets/js/media.js`**: los tres handlers del accordion (`saveAccordeonItemData`, submit handler global, `removeAccordeonItem`) ahora leen `.coltman-media-alt` e incluyen `alt` en el JSON guardado.
+
+### Corregido — Accordion: no guardaba en página "Add New" de taxonomía
+
+- **`assets/js/media.js`**: se agregaron dos mecanismos de respaldo:
+  - `document.addEventListener('change', ...)` delegado sobre `.accordion-item .input-title`: persiste datos al hidden input cuando el title pierde el foco.
+  - `addAccordeonItem()` ahora guarda los ítems existentes al hidden input antes de añadir una nueva fila.
+- **Síntoma**: al crear un término nuevo, los datos del accordion se perdían porque el handler de `submit` no se disparaba en esa pantalla.
+
+### Corregido — `ColtmanTermMeta`: render faltaba `case 'checkbox'`, `case 'get_terms'`, `case 'get_posts'`
+
+- **`class-termeta.php`** → `wpturbo_render_input_field()`: se agregaron:
+  - `case 'checkbox'`: renderiza el checkbox con el atributo `checked` cuando corresponde (usando el método `checkbox()` de `ColtmanInputFields`).
+  - `case 'get_terms'`: renderiza el selector de términos.
+  - `case 'get_posts'`: renderiza el selector de posts.
+- **Síntoma**: los campos checkbox, get_terms y get_posts caían al `default:` y se renderizaban como `<input type="text">` en lugar de su componente nativo.
+
+### Corregido — `ColtmanTermMeta`: save faltaba `case 'checkbox'`, `case 'get_posts'`, `case 'editor'`
+
+- **`class-termeta.php`** → `wpturbo_save_meta_fields()`:
+  - `case 'checkbox'`: guarda `'on'` cuando está marcado, `''` cuando no (el guarda `isset()` temprano ahora excluye checkboxes).
+  - `case 'get_posts'`: guarda como JSON array (alias de `relationship`).
+  - `case 'editor'`: usa `wp_filter_post_kses()` en lugar de caer a `sanitize_text_field()` que destruye el HTML.
+- **Síntoma**: checkbox nunca se limpiaba al desmarcar, get_posts se serializaba incorrectamente, editor perdía todo el HTML.
+
+### Agregado — `pricing_tiers`: sub_fields para el repeater
+
+- **`term_metas.php`**: se agregaron 4 sub-campos al repeater `pricing_tiers`:
+  - `label` (text), `min_price` (number), `max_price` (number), `price` (number).
+
+---
 
 ### Cambiado — Select2 actualizado de v4.0.13 a v4.1.0
 
