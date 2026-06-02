@@ -222,7 +222,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			foreach ( $this->config['fields'] as $field ) {
 				switch ( $field['type'] ) {
 					case 'get_posts':
-						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) ? json_encode( $_POST[ $field['id'] ] ) : '[]' );
+						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) && is_array( $_POST[ $field['id'] ] ) ? json_encode( $_POST[ $field['id'] ] ) : '[]' );
 						break;
 					case 'group':
 						$all_sub_fields = isset( $field['fields'] ) ? $field['fields'] : [];
@@ -284,6 +284,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					case 'map':
 						if ( isset( $_POST[ $field['id'] ] ) && $_POST[ $field['id'] ] !== '' ) {
 							$raw  = json_decode( wp_unslash( $_POST[ $field['id'] ] ), true );
+							if ( ! is_array( $raw ) ) break;
 							$lat  = isset( $raw['lat'] )  ? (float) $raw['lat']  : null;
 							$lng  = isset( $raw['lng'] )  ? (float) $raw['lng']  : null;
 							$mzoom = isset( $raw['zoom'] ) ? (int) $raw['zoom']  : 13;
@@ -295,7 +296,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 						}
 						break;
 					case 'relationship':
-						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) ? json_encode( $_POST[ $field['id'] ] ) : '[]' );
+						update_post_meta( $post_id, $field['id'], isset( $_POST[ $field['id'] ] ) && is_array( $_POST[ $field['id'] ] ) ? json_encode( $_POST[ $field['id'] ] ) : '[]' );
 						break;
 					case 'repeater':
 						if ( isset( $_POST[ $field['id'] ] ) && is_array( $_POST[ $field['id'] ] ) ) {
@@ -325,6 +326,15 @@ if(!class_exists('ColtmanCreateMetabox')) {
 						if ( isset( $_POST[ $field['id'] ] ) ) {
 							update_post_meta( $post_id, $field['id'], $_POST[ $field['id'] ] );
 						}
+						break;
+					case 'media':
+						$_media_val   = isset( $_POST[ $field['id'] ] ) ? (string) $_POST[ $field['id'] ] : '';
+						$_media_saved = ( isset( $field['return'] ) && $field['return'] === 'id' )
+							? (string) absint( $_media_val ) : esc_url_raw( $_media_val );
+						update_post_meta( $post_id, $field['id'], $_media_saved );
+						$_alt_key = $field['id'] . '_alt';
+						update_post_meta( $post_id, $_alt_key,
+							isset( $_POST[ $_alt_key ] ) ? sanitize_text_field( (string) $_POST[ $_alt_key ] ) : '' );
 						break;
 					default:
 						if ( isset( $_POST[ $field['id'] ] ) ) {
@@ -414,7 +424,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 				</th>
 				<td>
 					<?php if ( ! empty( $field['description'] ) ) : ?>
-					<p class="w-full mb-2 text-sm text-gray-500 description"><?php echo $field['description']; ?></p>
+					<p class="w-full mb-2 text-sm text-gray-500 description"><?php echo esc_html( $field['description'] ); ?></p>
 					<?php endif; ?>
 					<div class="coltman-group-body" id="coltman-group-<?php echo $group_id; ?>">
 						<?php foreach ( $static_fields as $sub_field ) : ?>
@@ -532,6 +542,9 @@ if(!class_exists('ColtmanCreateMetabox')) {
 					$this->coltmanInputs->editor( $field, $value );
 					break;
 				case 'media':
+					global $post;
+					$field['_alt_value'] = ( $post && metadata_exists( 'post', $post->ID, $field['id'] . '_alt' ) )
+						? (string) get_post_meta( $post->ID, $field['id'] . '_alt', true ) : '';
 					$this->coltmanInputs->media( $field, $value );
 					break;
 				case 'gallery':

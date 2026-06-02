@@ -60,19 +60,18 @@
                 return;
             }
 
-            wp_enqueue_media(); // Para campos de imagen/galería
-
-            // Color picker
+            wp_enqueue_media();
             wp_enqueue_script( 'wp-color-picker' );
             wp_enqueue_style( 'wp-color-picker' );
-
-            // Select2 (si se usa en algún campo)
-            wp_register_style( 'select2css', '//cdnjs.cloudflare.com/ajax/libs/select2/3.4.8/select2.css', false, '1.0', 'all' );
-            wp_register_script( 'select2', '//cdnjs.cloudflare.com/ajax/libs/select2/3.4.8/select2.js', [ 'jquery' ], '1.0', true );
+            wp_register_style( 'select2css', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.css', false, '4.0.13', 'all' );
+            wp_register_script( 'select2', COLTMAN_ASSETS_URL . '/libs/select2/select2.min.js', [ 'jquery' ], '4.0.13', true );
             wp_enqueue_style( 'select2css' );
+            wp_enqueue_style( 'coltman-admin', COLTMAN_ASSETS_URL . '/css/admin.css', [], '1.6.0' );
             wp_enqueue_script( 'select2' );
-
-            wp_enqueue_script( 'coltman-media', COLTMAN_ASSETS_URL . '/js/media.js', [ 'jquery' ], '1.0', true );
+            wp_enqueue_style( 'leaflet',  COLTMAN_ASSETS_URL . '/libs/leaflet/leaflet.min.css', [], '1.9.4' );
+            wp_enqueue_script( 'leaflet', COLTMAN_ASSETS_URL . '/libs/leaflet/leaflet.min.js', [], '1.9.4', true );
+            wp_enqueue_script( 'coltman-media', COLTMAN_ASSETS_URL . '/js/media.js', [ 'jquery', 'select2', 'jquery-ui-sortable' ], '1.6.0', true );
+            wp_localize_script( 'coltman-media', 'coltmanVars', [ 'assetsUrl' => COLTMAN_ASSETS_URL ] );
         }
 
         /**
@@ -109,6 +108,9 @@
         private function render_field_row( $field, $user ) {
             $value   = $this->get_user_meta_value( $user->ID, $field );
             $checked = $this->get_checked( $user->ID, $field );
+            if ( isset( $field['type'] ) && $field['type'] === 'media' ) {
+                $field['_alt_value'] = (string) get_user_meta( $user->ID, $field['id'] . '_alt', true );
+            }
             ?>
             <tr>
                 <th>
@@ -175,6 +177,18 @@
                 case 'accordion':
                     $this->coltmanInputs->accordion( $field, $value );
                     break;
+                case 'relationship':
+                    $this->coltmanInputs->relationship( $field, $value );
+                    break;
+                case 'color':
+                    $this->coltmanInputs->color( $field, $value );
+                    break;
+                case 'repeater':
+                    $this->coltmanInputs->repeater( $field, $value );
+                    break;
+                case 'map':
+                    $this->coltmanInputs->map( $field, $value );
+                    break;
                 default:
                     $this->coltmanInputs->input( $field, $value );
             }
@@ -236,16 +250,71 @@
 
                 // Sanitización según el tipo
                 switch ( $type ) {
+                    case 'media':
+                        $value = isset( $field['return'] ) && $field['return'] === 'id'
+                            ? (string) absint( $value )
+                            : esc_url_raw( (string) $value );
+                        $_alt_key = $field_id . '_alt';
+                        update_user_meta( $user_id, $_alt_key,
+                            sanitize_text_field( isset( $_POST[ $_alt_key ] ) ? (string) $_POST[ $_alt_key ] : '' ) );
+                        break;
                     case 'get_posts':
-                        // Se espera un array, lo guardamos como JSON
+                    case 'relationship':
                         $value = is_array( $value ) ? json_encode( $value ) : '[]';
+                        break;
+                    case 'get_terms':
+                        $is_multiple = ! ( isset( $field['multiple'] ) && ! $field['multiple'] );
+                        $value = $is_multiple
+                            ? ( is_array( $value ) ? json_encode( $value ) : '[]' )
+                            : sanitize_text_field( (string) $value );
                         break;
                     case 'gallery':
                     case 'accordion':
                     case 'list':
                         break;
+                    case 'repeater':
+                        if ( is_array( $value ) ) {
+                            $rows = [];
+                            foreach ( $value as $row ) {
+                                if ( ! is_array( $row ) ) continue;
+                                $clean = [];
+                                foreach ( isset( $field['sub_fields'] ) ? $field['sub_fields'] : [] as $sub ) {
+                                    $sv = isset( $row[ $sub['id'] ] ) ? $row[ $sub['id'] ] : '';
+                                    switch ( isset( $sub['type'] ) ? $sub['type'] : 'text' ) {
+                                        case 'email':    $clean[ $sub['id'] ] = sanitize_email( (string) $sv );         break;
+                                        case 'textarea': $clean[ $sub['id'] ] = wp_kses_post( (string) $sv );          break;
+                                        case 'url':      $clean[ $sub['id'] ] = esc_url_raw( (string) $sv );           break;
+                                        default:         $clean[ $sub['id'] ] = sanitize_text_field( (string) $sv );
+                                    }
+                                }
+                                if ( array_filter( $clean ) ) $rows[] = $clean;
+                            }
+                            $value = json_encode( $rows );
+                        } else {
+                            $value = '[]';
+                        }
+                        break;
+                    case 'map':
+                        if ( is_string( $value ) && $value !== '' ) {
+                            $raw   = json_decode( wp_unslash( $value ), true );
+                            if ( is_array( $raw ) ) {
+                                $lat   = isset( $raw['lat'] )  ? (float) $raw['lat']  : null;
+                                $lng   = isset( $raw['lng'] )  ? (float) $raw['lng']  : null;
+                                $mzoom = isset( $raw['zoom'] ) ? (int)   $raw['zoom'] : 13;
+                                if ( $lat !== null && $lat >= -90 && $lat <= 90 && $lng !== null && $lng >= -180 && $lng <= 180 ) {
+                                    $value = wp_json_encode( [ 'lat' => $lat, 'lng' => $lng, 'zoom' => $mzoom ] );
+                                } else {
+                                    $value = '';
+                                }
+                            } else {
+                                $value = '';
+                            }
+                        }
+                        break;
+                    case 'color':
+                        $value = sanitize_text_field( (string) $value );
+                        break;
                     case 'checkbox':
-                        // Para checkbox, si está presente suele ser 'on', sino ya es ''
                         break;
                     case 'editor':
                         $value = wp_filter_post_kses( $value );

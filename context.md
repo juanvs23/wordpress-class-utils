@@ -1,6 +1,6 @@
 # Contexto: carpeta `classes/`
 
-> **Versión actual: 1.14.0** — 2026-05-28  
+> **Versión actual: 1.15.2** — 2026-06-01  
 > Suite: **256 tests / 470 assertions** (`php vendor/bin/phpunit`)  
 > Ver `CHANGELOG.md` para el historial completo, `docs/roadmap.md` para el estado de cada fase.
 
@@ -66,7 +66,7 @@ classes/
 ├── CHANGELOG.md                      ← Historial (Semantic Versioning)
 ├── assets/
 │   ├── css/
-│   │   └── admin.css                 ← Estilos utilitarios del admin (encolado)
+│   │   └── admin.css                 ← Estilos utilitarios del admin (encolado). Secciones: utilidades, WYSIWYG, accordion, group, map, field-manager, gallery, list, media, repeater
 │   ├── js/
 │   │   ├── media.js                  ← JS del admin: todos los campos interactivos
 │   │   └── gutenberg-panel.js        ← Panel lateral Gutenberg (sin build step)
@@ -162,7 +162,7 @@ Renderizado centralizado de todos los tipos de campo. Usado por `ColtmanCreateMe
 | `editor()` | `editor` | string (HTML) | `wp_editor()` |
 | `checkbox()` | `checkbox` | `'on'` \| `''` | |
 | `select()` | `select` | string | array `['value'=>…,'label'=>…]` |
-| `media()` | `media` | URL o ID | `rwp-media-toggle` + wp.media() |
+| `media()` | `media` | URL o ID | Tarjeta con thumbnail 64×64, input URL readonly, input alt text, botón Upload + Clear. Alt guardado en `field_id_alt`. |
 | `gallery_input()` | `gallery` | JSON array | `[{id,url,alt,sizes,title,…}]` — alt editable, drag-and-drop, miniatura en tiempo real |
 | `list_input()` | `list` | JSON array | `[{item,text}]` — textarea por ítem, drag-and-drop, add/remove |
 | `accordion()` | `accordion` | JSON array | `[{id,title,content,image}]` — WYSIWYG con headings, paste limpio, estado activo |

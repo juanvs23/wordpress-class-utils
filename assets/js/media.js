@@ -123,8 +123,8 @@ jQuery.noConflict();
             }).on('select', function() {
                 let attachment = rwpMediaUploader.state().get('selection').first().toJSON();
                 coltmanLog(attachment);
-                button.prev().val(attachment[button.data('return')]);
                 const getImageEl = e.currentTarget.closest('.get-image');
+                const mediaWrap  = e.currentTarget.closest('.coltman-media');
                 if(getImageEl){
                     const imageItem    = getImageEl;
                     const galleryItem  = imageItem.parentNode;
@@ -149,8 +149,30 @@ jQuery.noConflict();
                         imageGallery = [...imageGallery, entry];
                     }
                     inputGallery.value = JSON.stringify(imageGallery);
+                } else if (mediaWrap) {
+                    const urlInput = mediaWrap.querySelector('.coltman-media-url');
+                    const altInput = mediaWrap.querySelector('.coltman-media-alt');
+                    if (urlInput) urlInput.value = attachment[button.data('return')];
+                    if (altInput && !altInput.value) altInput.value = attachment.alt || '';
+                    const thumbUrl = (attachment.sizes && attachment.sizes.thumbnail && attachment.sizes.thumbnail.url)
+                        || attachment.url
+                        || '';
+                    coltmanMediaUpdatePreview(mediaWrap, urlInput ? urlInput.value : '', thumbUrl);
+                } else {
+                    button.prev().val(attachment[button.data('return')]);
                 }
             }).open();
+        });
+
+        // ── Media clear button ────────────────────────────────────────────────
+        $('body').on('click', '.coltman-media-clear', function () {
+            var wrap = this.closest('.coltman-media');
+            if (!wrap) return;
+            var urlInput = wrap.querySelector('.coltman-media-url');
+            var altInput = wrap.querySelector('.coltman-media-alt');
+            if (urlInput) urlInput.value = '';
+            if (altInput) altInput.value = '';
+            coltmanMediaUpdatePreview(wrap, '');
         });
 
         // ── Accordion sortable ────────────────────────────────────────────────
@@ -404,6 +426,20 @@ jQuery.noConflict();
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function coltmanMediaUpdatePreview(wrap, value, thumbUrl) {
+    var isUrlImg   = value && /\.(jpg|jpeg|png|gif|webp|svg)(\?[^#]*)?$/i.test(value);
+    var previewSrc = thumbUrl || (isUrlImg ? value : '');
+    var thumb       = wrap.querySelector('.coltman-media-thumb');
+    var placeholder = wrap.querySelector('.coltman-media-placeholder');
+    var clearBtn    = wrap.querySelector('.coltman-media-clear');
+    if (thumb) {
+        thumb.src = previewSrc;
+        thumb.classList.toggle('has-image', !!previewSrc);
+    }
+    if (placeholder) placeholder.style.display = previewSrc ? 'none' : '';
+    if (clearBtn) clearBtn.classList.toggle('hidden', !value);
+}
 
 function coltmanBuildFieldRow(type, key, label) {
     var inputHtml;

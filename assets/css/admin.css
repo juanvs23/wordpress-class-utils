@@ -150,10 +150,143 @@
 
 /* ── Accordion ──────────────────────────────────────────────────────────── */
 
-.accordion-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 6px; color: #8c8f94; border-radius: 3px; }
-.accordion-drag-handle:hover { color: #1d2327; background: rgba(0,0,0,0.06); }
+/* Outer container spacing */
+.accordion-container { gap: 6px !important; padding-bottom: 4px !important; }
+
+/* Item card — override bg-slate-100 p-4 flex items-center gap-2 */
+.accordion-item {
+    background: #fff !important;
+    border: 1px solid #c3c4c7 !important;
+    border-radius: 3px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    align-items: stretch !important;
+    overflow: hidden;
+}
+.accordion-item:hover { border-color: #a7aaad !important; }
+
+/* Content column (left) — override w-10/12 p-4 */
+.accodeon-item-content {
+    flex: 1 1 0% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 14px 16px 16px !important;
+    gap: 10px !important;
+}
+
+/* Item heading — override inline margin style */
+.accodeon-item-content > h3 {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    color: #8c8f94 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    margin: 0 0 6px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid #f0f0f1 !important;
+}
+
+/* Side panel (right) — override w-2/12 p-4 flex-col items-center justify-center */
+.accodeon-item-panel {
+    flex: 0 0 50px !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 3px !important;
+    padding: 10px 7px !important;
+    background: #f6f7f7 !important;
+    border-left: 1px solid #efefef !important;
+}
+
+/* Drag handle */
+.accordion-drag-handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 4px;
+    margin-bottom: 6px;
+    color: #c3c4c7;
+    border-radius: 3px;
+    user-select: none;
+}
+.accordion-drag-handle:hover { color: #646970; background: rgba(0,0,0,0.05); }
 .accordion-drag-handle:active { cursor: grabbing; }
-.accordion-sort-placeholder { background: #e5e7eb; border: 2px dashed #9ca3af; border-radius: 4px; min-height: 60px; }
+
+/* Panel action buttons — icon-only, compact — override bg-red-500 / bg-blue-500 blocks */
+.accodeon-item-panel > button {
+    width: 34px !important;
+    height: 28px !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 3px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    transition: color 0.12s, background 0.12s, border-color 0.12s !important;
+}
+.accodeon-item-panel > button svg {
+    width: 15px !important;
+    height: 15px !important;
+    flex-shrink: 0 !important;
+}
+/* Remove button (1st) — danger */
+.accodeon-item-panel > button:nth-of-type(1) {
+    background: #d63638 !important;
+    border-color: #d63638 !important;
+    color: #fff !important;
+}
+.accodeon-item-panel > button:nth-of-type(1):hover {
+    background: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+/* Save button (2nd) — info */
+.accodeon-item-panel > button:nth-of-type(2) {
+    background: #2271b1 !important;
+    border-color: #2271b1 !important;
+    color: #fff !important;
+}
+.accodeon-item-panel > button:nth-of-type(2):hover {
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+}
+
+/* "Add Row" button — info (WP primary blue) */
+.accordion-button-container { padding-top: 2px; }
+.accordion-button-container > button {
+    background: #2271b1 !important;
+    border: 1px solid #2271b1 !important;
+    border-radius: 3px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    height: auto !important;
+    padding: 10px !important;
+    width: fit-content !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    transition: background 0.12s, border-color 0.12s !important;
+}
+.accordion-button-container > button:hover {
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+    color: #fff !important;
+}
+.accordion-button-container > button svg { width: 13px !important; height: 13px !important; }
+
+/* Sortable placeholder */
+.accordion-sort-placeholder { background: #f0f6fc; border: 2px dashed #72aee6; border-radius: 3px; min-height: 60px; opacity: 0.7; }
 
 /* ── Group ──────────────────────────────────────────────────────────────── */
 
@@ -256,9 +389,140 @@
 .coltman-list-footer { padding: 8px 12px; background: #f9f9f9; border-top: 1px solid #e2e4e7; }
 .coltman-list-add { display: inline-flex; align-items: center; gap: 5px; }
 
+/* ── Media ───────────────────────────────────────────────────────────────── */
+
+.coltman-media { display: flex; align-items: center; gap: 12px; border: 1px solid #e2e4e7; border-radius: 6px; background: #fff; padding: 10px 12px; }
+
+/* Thumbnail square */
+.coltman-media-preview { position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 5px; overflow: hidden; background: #f0f0f1; border: 1px solid #e2e4e7; }
+.coltman-media-thumb { width: 100%; height: 100%; object-fit: cover; display: none; }
+.coltman-media-thumb.has-image { display: block; }
+.coltman-media-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #c3c4c7; pointer-events: none; }
+.coltman-media-thumb.has-image + .coltman-media-placeholder { display: none; }
+
+/* Body: input + actions */
+.coltman-media-body { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.coltman-media-url { font-size: 0.8rem !important; color: #646970 !important; background: #f6f7f7 !important; cursor: default; }
+.coltman-media-url:focus { box-shadow: none !important; border-color: #c3c4c7 !important; outline: none !important; }
+.coltman-media-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.coltman-media-btn { display: inline-flex !important; align-items: center; gap: 5px; }
+
+/* Clear button */
+.coltman-media-clear { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px solid transparent; color: #8c8f94; cursor: pointer; font-size: 0.8rem; padding: 3px 8px; border-radius: 3px; line-height: 1.5; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+.coltman-media-clear:hover { color: #d63638; background: #fce8e8; border-color: #f0a0a0; }
+.coltman-media-clear.hidden { display: none !important; }
+
 /* ── Repeater ──────────────────────────────────────────────────────────── */
 
-.repeater-drag-handle { cursor: grab; display: flex; align-items: center; justify-content: center; padding: 6px; color: #8c8f94; border-radius: 3px; }
-.repeater-drag-handle:hover { color: #1d2327; background: rgba(0,0,0,0.06); }
+/* Rows container spacing */
+.coltman-repeater > .repeater-rows { gap: 6px !important; }
+
+/* Row card — override bg-slate-100 p-4 border border-gray-300 rounded */
+.repeater-row {
+    background: #fff !important;
+    border: 1px solid #c3c4c7 !important;
+    border-radius: 3px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    overflow: hidden;
+}
+.repeater-row:hover { border-color: #a7aaad !important; }
+
+/* Row header bar — override border-b border-gray-300 pb-3 */
+.repeater-row > div:first-child {
+    background: #f6f7f7 !important;
+    border-bottom: 1px solid #efefef !important;
+    border-radius: 0 !important;
+    padding: 6px 10px 6px 12px !important;
+    gap: 8px !important;
+}
+
+/* "Row N" label */
+.repeater-row-num {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    color: #646970 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+}
+
+/* Drag handle */
+.repeater-drag-handle {
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    color: #c3c4c7;
+    border-radius: 3px;
+    user-select: none;
+}
+.repeater-drag-handle:hover { color: #646970; background: rgba(0,0,0,0.05); }
 .repeater-drag-handle:active { cursor: grabbing; }
-.repeater-sort-placeholder { background: #e5e7eb; border: 2px dashed #9ca3af; border-radius: 4px; min-height: 40px; }
+
+/* Remove button in header — danger, visible */
+.repeater-row > div:first-child button {
+    width: 28px !important;
+    height: 26px !important;
+    background: #d63638 !important;
+    border: 1px solid #d63638 !important;
+    border-radius: 3px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    transition: background 0.12s, border-color 0.12s !important;
+}
+.repeater-row > div:first-child button:hover {
+    background: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+.repeater-row > div:first-child button svg { width: 14px !important; height: 14px !important; flex-shrink: 0 !important; }
+
+/* Sub-field wrapper divs — padding and spacing */
+.repeater-row > div:not(:first-child) {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    gap: 3px !important;
+}
+.repeater-row > div:nth-child(2) { padding-top: 10px !important; }
+.repeater-row > div:not(:first-child) + div:not(:first-child) { margin-top: 6px; }
+.repeater-row > div:last-child { padding-bottom: 10px !important; }
+
+/* Sub-field labels */
+.repeater-row label.text-sm {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: #3c434a !important;
+}
+
+/* "Add Row" button — info (WP primary blue) */
+.coltman-repeater > button {
+    background: #2271b1 !important;
+    border: 1px solid #2271b1 !important;
+    border-radius: 3px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    height: auto !important;
+    padding: 10px !important;
+    width: fit-content !important;
+    min-width: auto !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    transition: background 0.12s, border-color 0.12s !important;
+}
+.coltman-repeater > button:hover {
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+    color: #fff !important;
+}
+.coltman-repeater > button svg { width: 13px !important; height: 13px !important; }
+
+/* Sortable placeholder */
+.repeater-sort-placeholder { background: #f0f6fc; border: 2px dashed #72aee6; border-radius: 3px; min-height: 40px; }

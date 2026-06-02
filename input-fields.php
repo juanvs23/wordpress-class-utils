@@ -41,7 +41,7 @@ if(!class_exists('ColtmanInputFields')){
                 'wpautop' => isset( $field['wpautop'] ) ? true : false,
                 'media_buttons' => isset( $field['media-buttons'] ) ? true : false,
                 'textarea_name' => $field['id'],
-                'textarea_rows' => isset( $field['rows'] ) ? isset( $field['rows'] ) : 20,
+                'textarea_rows' => isset( $field['rows'] ) ? $field['rows'] : 20,
                 'teeny' => isset( $field['teeny'] ) ? true : false,
                 'quicktags' => true,
             ] );
@@ -134,34 +134,74 @@ if(!class_exists('ColtmanInputFields')){
     
     
         /**
-         * Echoes the "Upload" button that opens the WP media modal.
+         * Echoes a media picker field: thumbnail preview + readonly URL input + Upload/Clear buttons.
          *
-         * @param array<string, mixed> $field Field config — uses 'modal-button', 'modal-title', 'return', 'id', 'button-text'.
-         * @return void
-         */
-        private function media_button( $field ) {
-            printf(
-                '<button class="flex gap-2 px-3 py-2 text-white transition duration-300 bg-blue-500 rounded rwp-media-toggle hover:bg-blue-600" data-modal-button="%s" data-modal-title="%s" data-return="%s" id="%s_button" name="%s_button" type="button">%s</button>',
-                isset( $field['modal-button'] ) ? $field['modal-button'] : __( 'Select this file', COLTMAN_TEXT_DOMAIN ),
-                isset( $field['modal-title'] ) ? $field['modal-title'] : __( 'Choose a file', COLTMAN_TEXT_DOMAIN ),
-                $field['return'],
-                $field['id'], $field['id'],
-                isset( $field['button-text'] ) ? $field['button-text'] : __( 'Upload', COLTMAN_TEXT_DOMAIN )
-            );
-        }
-    
-        /**
-         * Echoes a text input + media picker button wrapped in a flex container.
+         * Thumbnail is shown automatically when the stored value is an image URL.
+         * JS (media.js) handles selection, preview update and clearing.
          *
-         * @param array<string, mixed> $field Field config.
+         * @param array<string, mixed> $field Field config — supports 'modal-button', 'modal-title', 'return', 'button-text', 'class'.
          * @param string               $value Current URL or ID value.
          * @return void
          */
         public function media( $field, $value = '' ) {
-            echo '<div class="flex items-center justify-between w-full gap-2 min-h-10">';
-                $this->input( $field, $value );
-                $this->media_button( $field );
-            echo '</div>';
+            $extra_class = isset( $field['class'] )        ? $field['class']                                        : '';
+            $return      = isset( $field['return'] )       ? $field['return']                                       : 'url';
+            $btn_text    = isset( $field['button-text'] )  ? $field['button-text']                                  : __( 'Upload', COLTMAN_TEXT_DOMAIN );
+            $modal_btn   = isset( $field['modal-button'] ) ? $field['modal-button']                                 : __( 'Select this file', COLTMAN_TEXT_DOMAIN );
+            $modal_title = isset( $field['modal-title'] )  ? $field['modal-title']                                  : __( 'Choose a file', COLTMAN_TEXT_DOMAIN );
+            $thumb_src = '';
+            $is_image  = false;
+            if ( $return === 'url' && $value !== '' ) {
+                $is_image  = (bool) preg_match( '/\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i', $value );
+                $thumb_src = $is_image ? $value : '';
+            } elseif ( $return === 'id' && $value !== '' && is_numeric( $value ) ) {
+                $thumb_src = wp_get_attachment_image_url( (int) $value, 'thumbnail' ) ?: '';
+                $is_image  = $thumb_src !== '';
+            }
+            ?>
+            <div class="coltman-media">
+                <div class="coltman-media-preview">
+                    <img class="coltman-media-thumb<?php echo $is_image ? ' has-image' : ''; ?>"
+                         src="<?php echo $is_image ? esc_url( $thumb_src ) : ''; ?>"
+                         alt="">
+                    <span class="coltman-media-placeholder"<?php echo $is_image ? ' style="display:none"' : ''; ?>>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </span>
+                </div>
+                <div class="coltman-media-body">
+                    <input class="regular-text block w-full coltman-media-url<?php echo $extra_class ? ' ' . esc_attr( $extra_class ) : ''; ?>"
+                           id="<?php echo esc_attr( $field['id'] ); ?>"
+                           name="<?php echo esc_attr( $field['id'] ); ?>"
+                           type="text"
+                           value="<?php echo esc_attr( $value ); ?>"
+                           placeholder="<?php esc_attr_e( 'No file selected', COLTMAN_TEXT_DOMAIN ); ?>"
+                           readonly>
+                    <input class="regular-text block w-full coltman-media-alt"
+                           id="<?php echo esc_attr( $field['id'] ); ?>_alt"
+                           name="<?php echo esc_attr( $field['id'] ); ?>_alt"
+                           type="text"
+                           value="<?php echo esc_attr( isset( $field['_alt_value'] ) ? $field['_alt_value'] : '' ); ?>"
+                           placeholder="<?php esc_attr_e( 'Alt text', COLTMAN_TEXT_DOMAIN ); ?>">
+                    <div class="coltman-media-actions">
+                        <button type="button"
+                                class="button rwp-media-toggle coltman-media-btn"
+                                data-modal-button="<?php echo esc_attr( $modal_btn ); ?>"
+                                data-modal-title="<?php echo esc_attr( $modal_title ); ?>"
+                                data-return="<?php echo esc_attr( $return ); ?>"
+                                id="<?php echo esc_attr( $field['id'] ); ?>_button"
+                                name="<?php echo esc_attr( $field['id'] ); ?>_button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <?php echo esc_html( $btn_text ); ?>
+                        </button>
+                        <button type="button"
+                                class="coltman-media-clear<?php echo $value === '' ? ' hidden' : ''; ?>">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <?php esc_html_e( 'Clear', COLTMAN_TEXT_DOMAIN ); ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php
         }
         /**
          * Echoes a <textarea> element.
@@ -465,7 +505,7 @@ if(!class_exists('ColtmanInputFields')){
             $have_image = ! ( isset( $field['add_image'] ) && ( $field['add_image'] === false || $field['add_image'] === 'false' ) );
             ?>
             <div class="accordion flex flex-col gap-2 w-full">
-                <input type="hidden" class="accordion-data" name="<?php echo $field['id']; ?>" id="<?php echo $field['id']; ?>" value='<?php echo json_encode( $value ); ?>'>
+                <input type="hidden" class="accordion-data" name="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $field['id'] ); ?>" value='<?php echo esc_attr( json_encode( $value ) ); ?>'>
                 <div class="flex flex-col gap-4 pb-3 accordion-container">
 
                     <?php if ( count( $value ) > 0 ) : ?>
@@ -476,7 +516,7 @@ if(!class_exists('ColtmanInputFields')){
                             $image   = $item->image;
                             $id_base = str_replace( '_parent', '', $id );
                         ?>
-                        <div data-id="<?php echo $field['id']; ?>" id="<?php echo $id; ?>"
+                        <div data-id="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $id ); ?>"
                              class="accordion-item flex items-center justify-between gap-2 bg-slate-100 p-4">
                             <div class="w-10/12 accodeon-item-content flex flex-col gap-2">
                                 <h3 style="margin:0 0 4px"><?php echo esc_html( $field['label'] . ' item' ); ?></h3>
@@ -505,7 +545,7 @@ if(!class_exists('ColtmanInputFields')){
                     <?php else :
                         $field_id = $field['id'] . '_' . mt_rand( 1000, 9999 );
                     ?>
-                        <div data-id="<?php echo $field['id']; ?>" id="<?php echo $field_id . '_parent'; ?>"
+                        <div data-id="<?php echo esc_attr( $field['id'] ); ?>" id="<?php echo esc_attr( $field_id . '_parent' ); ?>"
                              class="accordion-item flex items-center justify-between gap-2 bg-slate-100 p-4">
                             <div class="w-10/12 accodeon-item-content flex flex-col gap-2">
                                 <h3 style="margin:0 0 4px"><?php echo esc_html( $field['label'] . ' item' ); ?></h3>

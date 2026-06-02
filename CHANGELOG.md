@@ -6,6 +6,89 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.15.2] — 2026-06-01
+
+### Cambiado — rediseño visual de `accordion` y `repeater` (`admin.css`)
+
+Todos los cambios son puramente CSS. No se tocó PHP, JS ni estructura HTML. Se mantienen todas las clases existentes.
+
+**Accordion — `.accordion-item` / `.accodeon-item-content` / `.accodeon-item-panel`:**
+- Item: reemplaza `bg-slate-100 p-4` por tarjeta blanca con `border: 1px solid #c3c4c7`, `border-radius: 3px`, padding cero.
+- Columna de contenido (`.accodeon-item-content`): `flex: 1`, padding `14px 16px 16px`, gap `10px`. Título `<h3>` en uppercase 0.7rem con línea inferior sutil.
+- Panel lateral (`.accodeon-item-panel`): franja fija de 50px, fondo `#f6f7f7`, borde izquierdo `#efefef`. Sustituye el `w-2/12` flotante.
+- **Botón Remove** (1.º del panel): fondo `#d63638`, icono blanco visible. Hover: `#b32d2e`. Los SVG tenían `fill="white"` hardcodeado — fondo opaco es necesario para que sean visibles.
+- **Botón Save** (2.º del panel): fondo `#2271b1`, icono blanco visible. Hover: `#135e96`.
+- **Botón "Add Row"**: azul WP `#2271b1`, texto blanco, `width: fit-content`, `padding: 10px`, hover `#135e96`.
+- `.accordion-sort-placeholder`: actualizado a `#f0f6fc` + borde punteado `#72aee6`.
+
+**Repeater — `.repeater-row` / cabecera / sub-campos:**
+- Fila: reemplaza `bg-slate-100 p-4 border-gray-300` por tarjeta blanca con `border: 1px solid #c3c4c7`, `border-radius: 3px`, gap y padding cero.
+- **Cabecera** (`.repeater-row > div:first-child`): barra gris `#f6f7f7` con `border-bottom: 1px solid #efefef`, padding `6px 10px 6px 12px`.
+- **Label "Row N"** (`.repeater-row-num`): uppercase 0.7rem, `font-weight: 600`, `#646970`.
+- **Botón Remove**: fondo `#d63638`, icono blanco visible, 28×26px. Hover: `#b32d2e`.
+- **Sub-campos**: padding `0 12px`; primer campo `padding-top: 10px`; entre campos `margin-top: 6px`; último campo `padding-bottom: 10px`. Labels `font-weight: 500`, `#3c434a`.
+- **Botón "Add Row"**: azul WP `#2271b1`, texto blanco, `width: fit-content`, `padding: 10px`, hover `#135e96`.
+- `.repeater-sort-placeholder`: actualizado a `#f0f6fc` + borde punteado `#72aee6`.
+
+---
+
+## [1.15.1] — 2026-06-01
+
+### Agregado — campo alt text en el componente `media`
+
+- **`media()` (`input-fields.php`)**: nuevo input `name="field_id_alt"` visible debajo del URL readonly. Valor cargado desde `$field['_alt_value']` (inyectado por cada clase de metabox al renderizar).
+- **`class-metabox.php` — `field()`**: al despachar tipo `media`, se inyecta `$field['_alt_value']` leyendo `get_post_meta($post->ID, $field_id . '_alt', true)`.
+- **`class-metabox.php` — `save_post()`**: nuevo `case 'media':` que sanitiza el valor (URL con `esc_url_raw` o ID con `absint` según `$field['return']`) y guarda el alt con `sanitize_text_field` bajo la meta key `field_id_alt`.
+- **`class-termeta.php` — `wpturbo_render_input_field()`**: añadido parámetro `int $term_id = 0`; `case 'media':` inyecta `_alt_value` con `get_term_meta`.
+- **`class-termeta.php` — `wpturbo_edit_meta_fields()`**: pasa `$term->term_id` a `wpturbo_render_input_field` para que el alt se cargue correctamente.
+- **`class-termeta.php` — `wpturbo_save_meta_fields()`**: `case 'media':` separado de `case 'url':`. Guarda el valor con sanitización por tipo (`absint`/`esc_url_raw`) y el alt bajo `field_id_alt` con `continue 2` para evitar el `update_term_meta` genérico del final del loop.
+- **`class-usermetabox.php` — `render_field_row()`**: inyecta `$field['_alt_value']` con `get_user_meta` antes de llamar a `render_field()`.
+- **`class-usermetabox.php` — `save_user_meta()`**: nuevo `case 'media':` con misma lógica de sanitización + guarda `field_id_alt`.
+- **`media.js` — select handler**: pre-rellena el `.coltman-media-alt` con `attachment.alt` cuando no tiene valor previo.
+- **`media.js` — clear handler**: limpia también el `.coltman-media-alt` al hacer clear.
+
+**Convención de meta keys:** el alt text de un campo `'id' => 'imagen_cover'` se guarda en `imagen_cover_alt`. Se lee en el frontend con `get_post_meta($post_id, 'imagen_cover_alt', true)`.
+
+---
+
+## [1.15.0] — 2026-06-01
+
+### Agregado — rediseño del componente `media`
+
+- **`media()` (`input-fields.php`)**: nuevo diseño visual del campo media. Reemplaza el layout `[input URL] [botón Upload]` por una tarjeta con:
+  - **Thumbnail 64×64** — muestra preview automático para URLs de imagen (jpg, jpeg, png, gif, webp, svg). Ícono de archivo cuando está vacío o es un tipo no-imagen.
+  - **Input URL readonly** — el campo es de solo lectura (los usuarios no deben escribir URLs a mano). Muestra el valor o `"No file selected"` como placeholder.
+  - **Botón Upload** — abre el media picker de WordPress. Conserva `data-return="url|id"` y compatibilidad con todos los contextos existentes (standalone, inside accordion, inside group).
+  - **Botón Clear** — aparece solo cuando hay valor. Limpia el input y resetea el thumbnail al ícono placeholder.
+  - Clase `coltman-media-url` en el input + clase extra de `$field['class']` preservada para backward compat (acordeón usa `image-url-accodeon`).
+
+- **`coltmanMediaUpdatePreview(wrap, value)` (`media.js`)**: función helper global que actualiza el thumbnail, el placeholder y el botón clear dado el wrapper `.coltman-media` y el nuevo valor.
+
+- **Handler del picker actualizado (`media.js`)**: el select handler de `wp.media` ahora prioriza `.coltman-media` (componente nuevo) sobre el fallback legacy `button.prev().val()`. Orden de resolución: gallery item → coltman-media → legacy.
+
+- **Handler de clear (`media.js`)**: nuevo `$('body').on('click', '.coltman-media-clear', ...)` que limpia el input y actualiza la preview vía `coltmanMediaUpdatePreview`.
+
+- **Estilos `.coltman-media*` (`admin.css`)**: `.coltman-media`, `.coltman-media-preview`, `.coltman-media-thumb`, `.coltman-media-placeholder`, `.coltman-media-body`, `.coltman-media-url`, `.coltman-media-actions`, `.coltman-media-btn`, `.coltman-media-clear`. Diseño consistente con el componente `gallery`.
+
+---
+
+## [1.14.1] — 2026-06-01
+
+### Corregido
+
+- **`input-fields.php` — `editor()`: `textarea_rows` siempre devolvía `true/false`** en vez del número de filas configurado. La expresión `isset($field['rows']) ? isset($field['rows']) : 20` retornaba el resultado de `isset()` (bool) como valor. Corregido a `isset($field['rows']) ? $field['rows'] : 20`.
+- **`input-fields.php` — `accordion()`: atributos HTML sin `esc_attr()`** en el hidden input (`name`, `id`, `value`) y en los wrappers de cada ítem (`data-id`, `id`). Todos pasan ahora por `esc_attr()`.
+- **`class-metabox.php` — `add_meta_boxes()` ignoraba CPTs adicionales en configuración multi-CPT.** `add_meta_box()` recibía `$this->config['cpt']` (string CSV original) en vez de `$this->config['post-type']` (array normalizado por `process_cpts()`). Con un único CPT funcionaba por casualidad; con varios, el metabox no aparecía en ninguno.
+- **`class-metabox.php` — `save_post()` campo `map`: sin null-check tras `json_decode()`.** Si el POST llegaba con JSON malformado, `$raw` era `null` y `isset($raw['lat'])` lanzaba un warning de PHP 8. Se añade `if ( ! is_array( $raw ) ) break;` antes de leer las claves.
+- **`class-metabox.php` — `save_post()` campos `get_posts`/`relationship`: sin `is_array()`.** Sin la comprobación, `json_encode("string")` guardaba `'"string"'` en vez de `'["string"]'` cuando el POST traía un único valor no envuelto en array. Ahora usa `is_array() ? json_encode(...) : '[]'`, igual que el case `group`.
+- **`class-metabox.php` — `group_field()`: `$field['description']` sin `esc_html()`.** El bloque `<p class="description">` hacía `echo $field['description']` directo. Corregido a `echo esc_html(...)`.
+- **`class-usermetabox.php` — Select2 v3.4.8 desde CDN incompatible con `media.js`.** `media.js` usa la API de Select2 v4 (`ajax: { processResults }`). La v3 tiene una API distinta (`initSelection`, `query`), haciendo que los campos `get_terms`/`get_posts` en perfiles de usuario no funcionasen. Migrado a Select2 v4.0.13 local (`COLTMAN_ASSETS_URL/libs/select2/`), igual que `class-metabox.php` y `class-termeta.php`.
+- **`class-usermetabox.php` — Enqueues faltantes en `admin_enqueue_scripts()`.** Añadidos: `coltman-admin` CSS (estilos del admin), `leaflet` CSS + JS (campos `map`), `jquery-ui-sortable` como dependencia de `coltman-media` (reordenar gallery/list/repeater/accordion), y `wp_localize_script('coltman-media', 'coltmanVars', [...])` (`media.js` accede a `coltmanVars.assetsUrl` al inicializar el mapa — sin esto lanzaba `ReferenceError` en cualquier página de perfil).
+- **`class-usermetabox.php` — Tipos `relationship`, `color`, `repeater`, `map` y `get_terms` no implementados.** En `render_field()` caían al `default` (`<input type="text">`). En `save_user_meta()` no tenían sanitización propia. Añadidos ambos switches con la misma lógica que `class-metabox.php`.
+- **`class-termeta.php` — Labels con interpolación directa sin escapar.** `"{$field['label']}"` en `wpturbo_render_meta_fields()` y `wpturbo_edit_meta_fields()` sustituido por `esc_html($field['label'])` y `esc_attr($field_id)`.
+
+---
+
 ## [1.14.0] — 2026-05-28
 
 ### Agregado — nuevo componente `list`

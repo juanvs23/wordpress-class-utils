@@ -101,7 +101,7 @@ if (!class_exists('ColtmanTermMeta')) {
                     continue;
                 }
                 $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value );
-                $label = "<label for='$field_id'>{$field['label']}</label>";
+                $label = "<label for='" . esc_attr( $field_id ) . "'>" . esc_html( $field['label'] ) . "</label>";
                 $html .= $this->wpturbo_format_field( $label, $field_html );
             }
             echo $html;
@@ -124,8 +124,8 @@ if (!class_exists('ColtmanTermMeta')) {
                     $html .= $this->wpturbo_render_group( $field_id, $field, $term->term_id );
                     continue;
                 }
-                $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value );
-                $label = "<label class='font-bold' for='$field_id'>{$field['label']}</label>";
+                $field_html = $this->wpturbo_render_input_field( $field_id, $field, $meta_value, $term->term_id );
+                $label = "<label class='font-bold' for='" . esc_attr( $field_id ) . "'>" . esc_html( $field['label'] ) . "</label>";
                 $html .= $this->wpturbo_format_field( $label, $field_html );
             }
             echo $html;
@@ -195,7 +195,7 @@ if (!class_exists('ColtmanTermMeta')) {
          *
          * @return string Rendered field HTML.
          */
-        public function wpturbo_render_input_field( string $field_id, array $field, string $field_value): string {
+        public function wpturbo_render_input_field( string $field_id, array $field, string $field_value, int $term_id = 0 ): string {
             if ( ! $this->coltmanInputs ) {
                 return "<input type='text' id='" . esc_attr( $field_id ) . "' name='" . esc_attr( $field_id ) . "' value='" . esc_attr( $field_value ) . "' />";
             }
@@ -211,6 +211,8 @@ if (!class_exists('ColtmanTermMeta')) {
                     $this->coltmanInputs->textarea( $field, $field_value );
                     break;
                 case 'media':
+                    $field['_alt_value'] = $term_id
+                        ? (string) get_term_meta( $term_id, $field_id . '_alt', true ) : '';
                     $this->coltmanInputs->media( $field, $field_value );
                     break;
                 case 'gallery':
@@ -343,10 +345,18 @@ if (!class_exists('ColtmanTermMeta')) {
                     case 'textarea':
                         $sanitized = wp_kses_post( $_POST[ $field_id ] );
                         break;
-                    case 'media':
                     case 'url':
                         $sanitized = esc_url_raw( $_POST[ $field_id ] );
                         break;
+                    case 'media':
+                        $_m_val = isset( $_POST[ $field_id ] ) ? (string) $_POST[ $field_id ] : '';
+                        $_m_saved = ( isset( $field['return'] ) && $field['return'] === 'id' )
+                            ? (string) absint( $_m_val ) : esc_url_raw( $_m_val );
+                        update_term_meta( $term_id, $field_id, $_m_saved );
+                        $_alt_k = $field_id . '_alt';
+                        update_term_meta( $term_id, $_alt_k,
+                            sanitize_text_field( isset( $_POST[ $_alt_k ] ) ? (string) $_POST[ $_alt_k ] : '' ) );
+                        continue 2;
                     case 'gallery':
                     case 'accordion':
                     case 'list':
