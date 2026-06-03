@@ -178,12 +178,30 @@ jQuery.noConflict();
         // ── Accordion sortable ────────────────────────────────────────────────
         if (typeof $.fn.sortable === 'function') {
             $('.accordion-container').sortable({
-                handle:      '.accordion-drag-handle',
-                axis:        'y',
-                cursor:      'grabbing',
-                tolerance:   'pointer',
-                placeholder: 'accordion-sort-placeholder',
+                handle:               '.accordion-drag-handle',
+                axis:                 'y',
+                cursor:               'grabbing',
+                tolerance:            'pointer',
+                placeholder:          'accordion-sort-placeholder',
                 forcePlaceholderSize: true,
+                stop: function() {
+                    var $container   = $(this);
+                    var $accordion   = $container.closest('.accordion');
+                    var $hiddenInput = $accordion.find('input[type="hidden"]');
+                    if (!$hiddenInput.length) return;
+                    try {
+                        var currentData = JSON.parse($hiddenInput.val() || '[]');
+                        var newOrder    = [];
+                        $container.find('.accordion-item').each(function() {
+                            var id    = String($(this).attr('id'));
+                            var entry = currentData.find(function(item) { return String(item.id) === id; });
+                            if (entry) newOrder.push(entry);
+                        });
+                        $hiddenInput.val(JSON.stringify(newOrder));
+                    } catch (err) {
+                        coltmanLog('Accordion sortable stop error:', err);
+                    }
+                },
             });
         }
 
