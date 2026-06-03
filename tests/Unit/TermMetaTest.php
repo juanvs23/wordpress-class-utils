@@ -292,4 +292,103 @@ class TermMetaTest extends TestCase
 
         $this->assertStringContainsString('form-field', $html);
     }
+
+    public function test_all_field_types_render_without_error(): void
+    {
+        $this->setFlag('is_admin', true);
+
+        $allTypes = [
+            'text'       => ['label' => 'Text',       'type' => 'text',       'default' => ''],
+            'number'     => ['label' => 'Number',     'type' => 'number',     'default' => ''],
+            'date'       => ['label' => 'Date',       'type' => 'date',       'default' => ''],
+            'email'      => ['label' => 'Email',      'type' => 'email',      'default' => ''],
+            'url'        => ['label' => 'URL',        'type' => 'url',        'default' => ''],
+            'textarea'   => ['label' => 'Textarea',   'type' => 'textarea',   'default' => ''],
+            'checkbox'   => ['label' => 'Check',      'type' => 'checkbox',   'default' => ''],
+            'select'     => ['label' => 'Select',     'type' => 'select',     'default' => 'a', 'options' => ['a' => 'A']],
+            'media'      => ['label' => 'Media',      'type' => 'media',      'default' => '', 'return' => 'url'],
+            'gallery'    => ['label' => 'Gallery',    'type' => 'gallery',    'default' => '[]'],
+            'list'       => ['label' => 'List',       'type' => 'list',       'default' => '[]'],
+            'editor'     => ['label' => 'Editor',     'type' => 'editor',     'default' => ''],
+            'color'      => ['label' => 'Color',      'type' => 'color',      'default' => ''],
+            'map'        => ['label' => 'Map',        'type' => 'map',        'default' => ''],
+            'get_terms'  => ['label' => 'Terms',      'type' => 'get_terms',  'taxonomy' => 'category', 'default' => ''],
+            'get_posts'  => ['label' => 'Posts',      'type' => 'get_posts',  'post_type' => 'post', 'default' => ''],
+            'accordion'  => ['label' => 'Accordion',  'type' => 'accordion',  'default' => '[]'],
+            'repeater'   => ['label' => 'Repeater',   'type' => 'repeater',   'default' => '[]'],
+            'relationship' => ['label' => 'Relationship', 'type' => 'relationship', 'post_type' => 'post', 'default' => '[]'],
+        ];
+
+        $tm = new \ColtmanTermMeta([
+            'taxonomy' => 'test_tax',
+            'title'    => 'All Fields Test',
+            'fields'   => $allTypes,
+        ]);
+
+        $simpleTypes = ['text', 'number', 'date', 'email', 'url', 'textarea', 'checkbox', 'select', 'media', 'color'];
+        $echoTypes = ['gallery', 'list', 'editor', 'map', 'get_terms', 'get_posts', 'accordion', 'repeater', 'relationship'];
+
+        foreach ($simpleTypes as $type) {
+            $field = $allTypes[$type];
+            $html = $tm->wpturbo_render_input_field($type, $field, $field['default'] ?? '');
+            $this->assertNotEmpty($html, "Simple field type '{$type}' rendered empty HTML");
+        }
+
+        foreach ($echoTypes as $type) {
+            $field = $allTypes[$type];
+            // These types may depend on wp_editor(), WP ajax handlers, or other WP dependencies
+            // that are unavailable in unit tests. Just verify they don't throw.
+            $tm->wpturbo_render_input_field($type, $field, $field['default'] ?? '');
+            $this->assertTrue(true, "Complex field type '{$type}' dispatched without error");
+        }
+    }
+
+    public function test_all_field_types_produce_expected_elements(): void
+    {
+        $this->setFlag('is_admin', true);
+
+        $fields = [
+            'f_text'     => ['label' => 'Text',     'type' => 'text',       'default' => ''],
+            'f_number'   => ['label' => 'Number',   'type' => 'number',     'default' => ''],
+            'f_check'    => ['label' => 'Check',    'type' => 'checkbox',   'default' => ''],
+            'f_textarea' => ['label' => 'TA',       'type' => 'textarea',   'default' => ''],
+            'f_select'   => ['label' => 'Sel',      'type' => 'select',     'default' => 'a', 'options' => ['a' => 'A', 'b' => 'B']],
+            'f_media'    => ['label' => 'Media',    'type' => 'media',      'default' => '', 'return' => 'url'],
+            'f_gallery'  => ['label' => 'Gallery',  'type' => 'gallery',    'default' => '[]'],
+            'f_list'     => ['label' => 'List',     'type' => 'list',       'default' => '[]'],
+            'f_editor'   => ['label' => 'Editor',   'type' => 'editor',     'default' => ''],
+            'f_color'    => ['label' => 'Color',    'type' => 'color',      'default' => ''],
+            'f_map'      => ['label' => 'Map',      'type' => 'map',        'default' => ''],
+            'f_terms'    => ['label' => 'Terms',    'type' => 'get_terms',  'taxonomy' => 'category', 'default' => ''],
+            'f_posts'    => ['label' => 'Posts',    'type' => 'get_posts',  'post_type' => 'post', 'default' => ''],
+        ];
+
+        $tm = new \ColtmanTermMeta([
+            'taxonomy' => 'test_tax',
+            'title'    => 'Render Test',
+            'fields'   => $fields,
+        ]);
+
+        $html = $tm->wpturbo_render_input_field('f_text', $fields['f_text'], '');
+        $this->assertStringContainsString('type="text"', $html, 'Text input missing');
+
+        $html = $tm->wpturbo_render_input_field('f_check', $fields['f_check'], 'on');
+        $this->assertStringContainsString('type="checkbox"', $html, 'Checkbox input missing');
+        $this->assertStringContainsString('checked', $html, 'Checkbox checked attr missing when value is on');
+
+        $html = $tm->wpturbo_render_input_field('f_check', $fields['f_check'], '');
+        $this->assertStringNotContainsString('checked', $html, 'Checkbox should not be checked when value is empty');
+
+        $html = $tm->wpturbo_render_input_field('f_number', $fields['f_number'], '5');
+        $this->assertStringContainsString('type="number"', $html, 'Number input missing');
+        $this->assertStringContainsString('value="5"', $html);
+
+        $sel_html = $tm->wpturbo_render_input_field('f_select', $fields['f_select'], 'a');
+        $this->assertStringContainsString('name="f_select"', $sel_html, 'Select name missing');
+
+        $this->assertStringContainsString('coltman-media', $tm->wpturbo_render_input_field('f_media', $fields['f_media'], ''), 'Media container missing');
+        $this->assertStringContainsString('coltman-gallery', $tm->wpturbo_render_input_field('f_gallery', $fields['f_gallery'], '[]'), 'Gallery container missing');
+        $this->assertStringContainsString('coltman-list', $tm->wpturbo_render_input_field('f_list', $fields['f_list'], '[]'), 'List container missing');
+        $this->assertStringContainsString('coltman-map', $tm->wpturbo_render_input_field('f_map', $fields['f_map'], ''), 'Map container missing');
+    }
 }
