@@ -6,6 +6,12 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.15.5] — 2026-06-03
+
+### Corregido — Accordion: drag-and-drop no persistía el nuevo orden
+
+- **`assets/js/media.js`** → accordion sortable: se agregó handler `stop` que reconstruye el JSON del hidden input recorriendo los `.accordion-item` en el nuevo orden del DOM. Funciona igual que los handlers existentes en gallery y list.
+- **Síntoma**: al reordenar ítems del accordion vía drag-and-drop, el orden visual cambiaba pero al refrescar la página se restauraba el orden original. En Gutenberg el problema era permanente porque el handler de `submit` no se dispara en el flujo REST API.
 ## [1.15.4] — 2026-06-02
 
 ### Corregido — Gallery: `inputItem.value` no se asignaba al seleccionar imagen

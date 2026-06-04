@@ -1,6 +1,6 @@
 # Contexto: carpeta `classes/`
 
-> **Versión actual: 1.15.4** — 2026-06-02  
+> **Versión actual: 1.15.5** — 2026-06-03  
 > Suite: **256 tests / 470 assertions** (`php vendor/bin/phpunit`)  
 > Ver `CHANGELOG.md` para el historial completo, `docs/roadmap.md` para el estado de cada fase.
 
