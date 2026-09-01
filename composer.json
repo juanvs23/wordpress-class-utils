@@ -2,6 +2,7 @@
     "name": "coltman/framework",
     "description": "Coltman Framework — WordPress helpers for CPTs, taxonomies and meta fields",
     "type": "library",
+    "license": "GPL-2.0-or-later",
     "require": {
         "php": ">=8.0"
     },
