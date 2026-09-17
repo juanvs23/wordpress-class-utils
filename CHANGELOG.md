@@ -6,6 +6,18 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.15.6] — 2026-09-16
+
+### Corregido — Cumplimiento wordpress.org (Plugin Check)
+
+- **`includes/core`** → refactor de seguridad y cumplimiento del framework para pasar Plugin Check 2.1.0:
+  - **Escapado de salida (EscapeOutput = 0)**: todas las salidas `echo`/`printf` de los 11 archivos core se envuelven por contexto (`esc_attr()` en atributos, `esc_html()`/`esc_html_e()` en texto, `esc_textarea()` en textarea). `class-termeta.php` mantiene `echo $html; // phpcs:ignore WordPress.Security.EscapeOutput` en los métodos de render de campos compuestos ya escapados (decisión D2).
+  - **Guard ABSPATH**: los 11 archivos core incluyen `if ( ! defined( 'ABSPATH' ) ) exit;` antes de cualquier código ejecutable (`class.php` lo coloca tras `namespace`).
+  - **Alternativas nativas de WP**: `mt_rand()` → `wp_rand()`, `date()` → `gmdate()`.
+  - **i18n literal**: `COLTMAN_TEXT_DOMAIN`, `$labelArgs['domain']` y `$config['text_domain']` reemplazados por el literal `'coltman'`. Labels concatenados de `ColtmanRegisterPost`/`ColtmanRegisterTaxonomy` refactorizados a `sprintf( __/x( '…%1$s', 'coltman' ), … )` con comentarios `translators:`.
+  - **Stub de test**: añadido `wp_rand` a `tests/Stubs/wordpress.php`.
+- **Sin cambio de API pública** (PATCH). Suite: 256 tests / 470 assertions verdes. `readme.md` sin cambios.
+
 ## [1.15.5] — 2026-06-03
 
 ### Corregido — Accordion: drag-and-drop no persistía el nuevo orden

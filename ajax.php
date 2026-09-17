@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * AJAX handlers for Coltman Framework — relationship field live search.
  *

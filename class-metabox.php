@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Creates admin metaboxes with dynamic custom fields for any post type.
  *
@@ -187,7 +188,7 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			}, $rest_fields );
 			wp_localize_script( 'coltman-gutenberg-panel', 'coltmanGutenbergData', [
 				'fields'     => $panel_data,
-				'panelTitle' => isset( $this->config['title'] ) ? $this->config['title'] : __( 'Custom Fields', COLTMAN_TEXT_DOMAIN ),
+				'panelTitle' => isset( $this->config['title'] ) ? $this->config['title'] : __( 'Custom Fields', 'coltman' ),
 			] );
 		}
 
@@ -418,15 +419,15 @@ if(!class_exists('ColtmanCreateMetabox')) {
 			<tr>
 				<th scope="row">
 					<div class="coltman-group-header">
-						<span class="coltman-group-label"><?php echo $label; ?></span>
-						<button type="button" class="coltman-group-toggle" data-group="<?php echo $group_id; ?>" aria-expanded="true">&#9650;</button>
+						<span class="coltman-group-label"><?php echo esc_html( $label ); ?></span>
+						<button type="button" class="coltman-group-toggle" data-group="<?php echo esc_attr( $group_id ); ?>" aria-expanded="true">&#9650;</button>
 					</div>
 				</th>
 				<td>
 					<?php if ( ! empty( $field['description'] ) ) : ?>
 					<p class="w-full mb-2 text-sm text-gray-500 description"><?php echo esc_html( $field['description'] ); ?></p>
 					<?php endif; ?>
-					<div class="coltman-group-body" id="coltman-group-<?php echo $group_id; ?>">
+					<div class="coltman-group-body" id="coltman-group-<?php echo esc_attr( $group_id ); ?>">
 						<?php foreach ( $static_fields as $sub_field ) : ?>
 						<div class="coltman-group-field-row">
 							<?php $this->label( $sub_field ); ?>
@@ -444,17 +445,17 @@ if(!class_exists('ColtmanCreateMetabox')) {
 						</div>
 						<?php endforeach; ?>
 						<div class="coltman-field-manager"
-						     data-group="<?php echo $group_id; ?>"
+						     data-group="<?php echo esc_attr( $group_id ); ?>"
 						     data-nonce="<?php echo esc_attr( $nonce ); ?>">
 							<div class="coltman-field-manager-toggle-row">
-								<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; <?php esc_html_e( 'Manage fields', COLTMAN_TEXT_DOMAIN ); ?></button>
+								<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; <?php esc_html_e( 'Manage fields', 'coltman' ); ?></button>
 							</div>
 							<div class="coltman-field-manager-panel" style="display:none">
 								<div class="coltman-dynamic-fields-list">
 									<?php
 									$dyn_visible = array_values( array_filter( $dynamic_schema, static fn( $df ) => ! in_array( $df['key'], $static_ids, true ) ) );
 									if ( empty( $dyn_visible ) ) : ?>
-									<p class="coltman-no-dynamic-fields"><?php esc_html_e( 'No dynamic fields added yet.', COLTMAN_TEXT_DOMAIN ); ?></p>
+									<p class="coltman-no-dynamic-fields"><?php esc_html_e( 'No dynamic fields added yet.', 'coltman' ); ?></p>
 									<?php else : ?>
 									<?php foreach ( $dyn_visible as $df ) : ?>
 									<div class="coltman-dynamic-field-item" data-key="<?php echo esc_attr( $df['key'] ); ?>">
@@ -467,17 +468,17 @@ if(!class_exists('ColtmanCreateMetabox')) {
 								</div>
 								<div class="coltman-add-field-form">
 									<select class="coltman-new-field-type">
-										<option value="text"><?php esc_html_e( 'Text', COLTMAN_TEXT_DOMAIN ); ?></option>
-										<option value="textarea"><?php esc_html_e( 'Textarea', COLTMAN_TEXT_DOMAIN ); ?></option>
-										<option value="number"><?php esc_html_e( 'Number', COLTMAN_TEXT_DOMAIN ); ?></option>
-										<option value="email"><?php esc_html_e( 'Email', COLTMAN_TEXT_DOMAIN ); ?></option>
+										<option value="text"><?php esc_html_e( 'Text', 'coltman' ); ?></option>
+										<option value="textarea"><?php esc_html_e( 'Textarea', 'coltman' ); ?></option>
+										<option value="number"><?php esc_html_e( 'Number', 'coltman' ); ?></option>
+										<option value="email"><?php esc_html_e( 'Email', 'coltman' ); ?></option>
 										<option value="url">URL</option>
 									</select>
-									<input type="text" class="coltman-new-field-key" placeholder="<?php esc_attr_e( 'field_key', COLTMAN_TEXT_DOMAIN ); ?>">
-									<input type="text" class="coltman-new-field-label" placeholder="<?php esc_attr_e( 'Field Label', COLTMAN_TEXT_DOMAIN ); ?>">
-									<button type="button" class="coltman-add-dynamic-field">+ <?php esc_html_e( 'Add field', COLTMAN_TEXT_DOMAIN ); ?></button>
+									<input type="text" class="coltman-new-field-key" placeholder="<?php esc_attr_e( 'field_key', 'coltman' ); ?>">
+									<input type="text" class="coltman-new-field-label" placeholder="<?php esc_attr_e( 'Field Label', 'coltman' ); ?>">
+									<button type="button" class="coltman-add-dynamic-field">+ <?php esc_html_e( 'Add field', 'coltman' ); ?></button>
 								</div>
-								<p class="coltman-field-manager-note"><?php esc_html_e( '* Dynamic fields apply to all posts with this group.', COLTMAN_TEXT_DOMAIN ); ?></p>
+								<p class="coltman-field-manager-note"><?php esc_html_e( '* Dynamic fields apply to all posts with this group.', 'coltman' ); ?></p>
 							</div>
 						</div>
 					</div>

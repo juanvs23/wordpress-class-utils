@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 if(!class_exists('ColtmanRegisterTaxonomy')){
 
 
@@ -67,26 +68,45 @@ if(!class_exists('ColtmanRegisterTaxonomy')){
             $this->post_types = $post_types;
 
             $this->labels = [
-                'name'                       => _x( $config['plural_name'], 'Taxonomy General Name', $config['text_domain'] ),
-                'singular_name'              => _x( $config['singular_name'], 'Taxonomy Singular Name', $config['text_domain'] ),
-                'menu_name'                  => __( $config['plural_name'], $config['text_domain'] ),
-                'all_items'                  => __( 'All '.$config['plural_name'], $config['text_domain'] ),
-                'parent_item'                => __( 'Superior '.$config['item'].':', $config['text_domain'] ),
-                'parent_item_colon'          => __( 'Superior '.$config['item'].':', $config['text_domain'] ),
-                'new_item_name'              => __( 'New '.$config['item'].' Name', $config['text_domain'] ),
-                'add_new_item'               => __( 'Add new '.$config['item'], $config['text_domain'] ),
-                'edit_item'                  => __( 'Edit '.$config['item'], $config['text_domain'] ),
-                'update_item'                => __( 'Update '.$config['item'], $config['text_domain'] ),
-                'view_item'                  => __( 'View '.$config['item'], $config['text_domain'] ),
-                'separate_items_with_commas' => __( 'Separated '.$config['item'].' with commas', $config['text_domain'] ),
-                'add_or_remove_items'        => __( 'Add or remove '.$config['item'], $config['text_domain'] ),
-                'choose_from_most_used'      => __( 'Choose from the '.$config['item'].' most used', $config['text_domain'] ),
-                'popular_items'              => __( 'Popular '.$config['item'], $config['text_domain'] ),
-                'search_items'               => __( 'Search '.$config['plural_name'], $config['text_domain'] ),
-                'not_found'                  => __( 'Not found', $config['text_domain'] ),
-                'no_terms'                   => __( 'No '.$config['plural_name'], $config['text_domain'] ),
-                'items_list'                 => __( $config['item'].' list', $config['text_domain'] ),
-                'items_list_navigation'      => __( $config['item'].' list navigation', $config['text_domain'] ),
+                        // translators: %1$s: taxonomy plural name
+                        'name'                       => sprintf( _x( '%1$s', 'Taxonomy General Name', 'coltman' ), $config['plural_name'] ),
+                        // translators: %1$s: taxonomy singular name
+                        'singular_name'              => sprintf( _x( '%1$s', 'Taxonomy Singular Name', 'coltman' ), $config['singular_name'] ),
+                        // translators: %1$s: taxonomy plural name
+                        'menu_name'                  => sprintf( __( '%1$s', 'coltman' ), $config['plural_name'] ),
+                        // translators: %1$s: taxonomy plural name
+                        'all_items'                  => sprintf( __( 'All %1$s', 'coltman' ), $config['plural_name'] ),
+                        // translators: %1$s: taxonomy item name
+                        'parent_item'                => sprintf( __( 'Superior %1$s:', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'parent_item_colon'          => sprintf( __( 'Superior %1$s:', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'new_item_name'              => sprintf( __( 'New %1$s Name', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'add_new_item'               => sprintf( __( 'Add new %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'edit_item'                  => sprintf( __( 'Edit %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'update_item'                => sprintf( __( 'Update %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'view_item'                  => sprintf( __( 'View %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'separate_items_with_commas' => sprintf( __( 'Separated %1$s with commas', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'add_or_remove_items'        => sprintf( __( 'Add or remove %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'choose_from_most_used'      => sprintf( __( 'Choose from the %1$s most used', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'popular_items'              => sprintf( __( 'Popular %1$s', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy plural name
+                        'search_items'               => sprintf( __( 'Search %1$s', 'coltman' ), $config['plural_name'] ),
+                'not_found'                  => __( 'Not found', 'coltman' ),
+                        // translators: %1$s: taxonomy plural name
+                        'no_terms'                   => sprintf( __( 'No %1$s', 'coltman' ), $config['plural_name'] ),
+                        // translators: %1$s: taxonomy item name
+                        'items_list'                 => sprintf( __( '%1$s list', 'coltman' ), $config['item'] ),
+                        // translators: %1$s: taxonomy item name
+                        'items_list_navigation'      => sprintf( __( '%1$s list navigation', 'coltman' ), $config['item'] ),
             ];
 
             $this->rewrite = $rewrite;

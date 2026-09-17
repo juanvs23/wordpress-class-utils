@@ -138,6 +138,9 @@ function add_meta_box(
     _coltman_spy('add_meta_box', compact('id', 'title', 'callback', 'screen', 'context', 'priority'));
 }
 
+// ── Random / time helpers ─────────────────────────────────────────────────────
+function wp_rand( int $min, int $max ): int { return mt_rand( $min, $max ); }
+
 // ── Post queries ──────────────────────────────────────────────────────────────
 function get_posts(array $args = []): array {
     _coltman_spy('get_posts', $args);

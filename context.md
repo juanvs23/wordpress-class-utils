@@ -1,7 +1,8 @@
 # Contexto: carpeta `classes/`
 
-> **Versión actual: 1.15.5** — 2026-06-03  
+> **Versión actual: 1.15.6** — 2026-09-16  
 > Suite: **256 tests / 470 assertions** (`php vendor/bin/phpunit`)  
+> Cumplimiento: **Plugin Check 2.1.0 limpio** (EscapeOutput = 0, guards ABSPATH, i18n literal `'coltman'`, alternativas nativas de WP).  
 > Ver `CHANGELOG.md` para el historial completo, `docs/roadmap.md` para el estado de cada fase.
 
 ---
@@ -51,11 +52,11 @@ Actualizar cuando cambie: tipo de campo, firma de constructor, constante, nueva 
 
 ```
 classes/
-├── class.php                         ← Loader principal + constantes del framework
-├── class-post-types.php              ← ColtmanRegisterPost
-├── class-taxonomy.php                ← ColtmanRegisterTaxonomy
-├── class-metabox.php                 ← ColtmanCreateMetabox  [CRLF — editar con Python]
-├── class-termeta.php                 ← ColtmanTermMeta        [CRLF — editar con Python]
+├── class.php                         ← Loader principal + constantes del framework  [CRLF]
+├── class-post-types.php              ← ColtmanRegisterPost                           [CRLF]
+├── class-taxonomy.php                ← ColtmanRegisterTaxonomy                        [CRLF]
+├── class-metabox.php                 ← ColtmanCreateMetabox                           [CRLF]
+├── class-termeta.php                 ← ColtmanTermMeta
 ├── class-usermetabox.php             ← ColtmanCreateUserMeta
 ├── input-fields.php                  ← ColtmanInputFields (renderizado de todos los campos)
 ├── ajax.php                          ← Handlers wp_ajax_* del framework
@@ -111,7 +112,9 @@ classes/
         └── remove_scripts.php
 ```
 
-> **CRLF:** `class-metabox.php`, `class-termeta.php`, `class.php`, `class-taxonomy.php` usan terminaciones de línea Windows (CRLF). Editar siempre con `python3` usando `open(f,'rb')`/`open(f,'wb')` — nunca con el Edit tool de Claude directamente.
+> **CRLF:** `class.php`, `class-metabox.php`, `class-post-types.php`, `class-taxonomy.php` usan terminaciones de línea Windows (CRLF). Editar siempre con `python3` usando `open(f,'rb')`/`open(f,'wb')` — nunca con el Edit tool de Claude directamente. Los 7 archivos restantes (`ajax.php`, `class-termeta.php`, `class-usermetabox.php`, `input-fields.php`, `utils/*`) usan LF.
+
+> **Cumplimiento wordpress.org (v1.15.6):** los 11 archivos core cumplen Plugin Check 2.1.0 — escapado de salida por contexto (`EscapeOutput` = 0), guard `if ( ! defined( 'ABSPATH' ) ) exit;` antes de cualquier código, alternativas nativas (`wp_rand`, `gmdate`) y dominio i18n literal `'coltman'`.
 
 > `optimizations/` no se carga automáticamente desde `utils.php`. Solo se activa con `require` explícito.
 

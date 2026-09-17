@@ -1,6 +1,8 @@
 <?php
 namespace Coltman\Framework;
 
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 // ── Requisitos mínimos ────────────────────────────────────────────────────────
 //
 //   PHP       >= 8.0   union types (array|bool) y str_starts_with()

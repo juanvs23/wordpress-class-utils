@@ -147,3 +147,18 @@ cd classes/ && php vendor/bin/phpunit --no-coverage
 | PHP | 8.0 | Union types · `str_starts_with()` |
 | WordPress | 5.0 | `determine_locale()` · `show_in_rest` |
 | ext-iconv | — | `formaturltext()` |
+
+## Fase 7 — Cumplimiento wordpress.org (Plugin Check)
+
+### ✅ 7.1 Cumplimiento Plugin Check 2.1.0 — RESUELTO (v1.15.6)
+**Solución aplicada:** Refactor de cumplimiento de los 11 archivos `includes/core` para pasar Plugin Check 2.1.0:
+
+| Categoría | Acción |
+|---|---|
+| **Escapado de salida** | Todas las salidas `echo`/`printf` envueltas por contexto: `esc_attr()` en atributos, `esc_html()`/`esc_html_e()` en texto, `esc_textarea()` en textarea. `class-termeta.php` usa `echo $html; // phpcs:ignore WordPress.Security.EscapeOutput` en campos compuestos ya escapados (decisión D2). `EscapeOutput` = 0. |
+| **ABSPATH guards** | `if ( ! defined( 'ABSPATH' ) ) exit;` en los 11 archivos core antes de cualquier código ejecutable (`class.php` tras `namespace`). |
+| **Alternativas nativas** | `mt_rand()` → `wp_rand()` (input-fields L300/362/547) y `date()` → `gmdate()` (L300/362). Stub `wp_rand` añadido a `tests/Stubs/wordpress.php`. |
+| **i18n literal** | `COLTMAN_TEXT_DOMAIN`, `$labelArgs['domain']`, `$config['text_domain']` → literal `'coltman'`. Labels concatenados de `ColtmanRegisterPost`/`ColtmanRegisterTaxonomy` → `sprintf( __/x( '…%1$s', 'coltman' ), … )` con comentarios `translators:`. |
+| **Docs** | CHANGELOG PATCH 1.15.6; `context.md` actualizado; `readme.md` sin cambios (API pública intacta). |
+
+**Verificación:** `php vendor/bin/phpunit` → 256 tests / 470 assertions verdes. Plugin Check estándar → 0 errores. CRLF preservado en los 4 archivos CRLF.

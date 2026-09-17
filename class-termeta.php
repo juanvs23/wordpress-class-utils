@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Adds custom meta fields to taxonomy term edit/add screens.
  *
@@ -104,7 +105,7 @@ if (!class_exists('ColtmanTermMeta')) {
                 $label = "<label for='" . esc_attr( $field_id ) . "'>" . esc_html( $field['label'] ) . "</label>";
                 $html .= $this->wpturbo_format_field( $label, $field_html );
             }
-            echo $html;
+            echo $html; // phpcs:ignore WordPress.Security.EscapeOutput
         }
         
         /**
@@ -131,7 +132,7 @@ if (!class_exists('ColtmanTermMeta')) {
                 $html  .= '<td>' . $field_html . '</td>';
                 $html  .= '</tr>';
             }
-            echo $html;
+            echo $html; // phpcs:ignore WordPress.Security.EscapeOutput
         }
     
         /**
@@ -310,12 +311,12 @@ if (!class_exists('ColtmanTermMeta')) {
             $dyn_visible = array_values( array_filter( $dynamic_schema, static fn( $df ) => ! in_array( $df['key'], $static_ids, true ) ) );
             $fm  = '<div class="coltman-field-manager" data-group="' . $gid . '" data-nonce="' . esc_attr( $nonce ) . '">';
             $fm .= '<div class="coltman-field-manager-toggle-row">';
-            $fm .= '<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; ' . esc_html__( 'Manage fields', COLTMAN_TEXT_DOMAIN ) . '</button>';
+            $fm .= '<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; ' . esc_html__( 'Manage fields', 'coltman' ) . '</button>';
             $fm .= '</div>';
             $fm .= '<div class="coltman-field-manager-panel" style="display:none">';
             $fm .= '<div class="coltman-dynamic-fields-list">';
             if ( empty( $dyn_visible ) ) {
-                $fm .= '<p class="coltman-no-dynamic-fields">' . esc_html__( 'No dynamic fields added yet.', COLTMAN_TEXT_DOMAIN ) . '</p>';
+                $fm .= '<p class="coltman-no-dynamic-fields">' . esc_html__( 'No dynamic fields added yet.', 'coltman' ) . '</p>';
             } else {
                 foreach ( $dyn_visible as $df ) {
                     $fm .= '<div class="coltman-dynamic-field-item" data-key="' . esc_attr( $df['key'] ) . '">';
@@ -327,17 +328,17 @@ if (!class_exists('ColtmanTermMeta')) {
             $fm .= '</div>';
             $fm .= '<div class="coltman-add-field-form">';
             $fm .= '<select class="coltman-new-field-type">';
-            $fm .= '<option value="text">'   . esc_html__( 'Text',     COLTMAN_TEXT_DOMAIN ) . '</option>';
-            $fm .= '<option value="textarea">' . esc_html__( 'Textarea', COLTMAN_TEXT_DOMAIN ) . '</option>';
-            $fm .= '<option value="number">'  . esc_html__( 'Number',   COLTMAN_TEXT_DOMAIN ) . '</option>';
-            $fm .= '<option value="email">'   . esc_html__( 'Email',    COLTMAN_TEXT_DOMAIN ) . '</option>';
+            $fm .= '<option value="text">'   . esc_html__( 'Text',     'coltman' ) . '</option>';
+            $fm .= '<option value="textarea">' . esc_html__( 'Textarea', 'coltman' ) . '</option>';
+            $fm .= '<option value="number">'  . esc_html__( 'Number',   'coltman' ) . '</option>';
+            $fm .= '<option value="email">'   . esc_html__( 'Email',    'coltman' ) . '</option>';
             $fm .= '<option value="url">URL</option>';
             $fm .= '</select>';
-            $fm .= '<input type="text" class="coltman-new-field-key" placeholder="' . esc_attr__( 'field_key', COLTMAN_TEXT_DOMAIN ) . '">';
-            $fm .= '<input type="text" class="coltman-new-field-label" placeholder="' . esc_attr__( 'Field Label', COLTMAN_TEXT_DOMAIN ) . '">';
-            $fm .= '<button type="button" class="coltman-add-dynamic-field">+ ' . esc_html__( 'Add field', COLTMAN_TEXT_DOMAIN ) . '</button>';
+            $fm .= '<input type="text" class="coltman-new-field-key" placeholder="' . esc_attr__( 'field_key', 'coltman' ) . '">';
+            $fm .= '<input type="text" class="coltman-new-field-label" placeholder="' . esc_attr__( 'Field Label', 'coltman' ) . '">';
+            $fm .= '<button type="button" class="coltman-add-dynamic-field">+ ' . esc_html__( 'Add field', 'coltman' ) . '</button>';
             $fm .= '</div>';
-            $fm .= '<p class="coltman-field-manager-note">' . esc_html__( '* Dynamic fields apply to all terms with this group.', COLTMAN_TEXT_DOMAIN ) . '</p>';
+            $fm .= '<p class="coltman-field-manager-note">' . esc_html__( '* Dynamic fields apply to all terms with this group.', 'coltman' ) . '</p>';
             $fm .= '</div>';
             $fm .= '</div>';
             $html .= $fm;

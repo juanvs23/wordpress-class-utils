@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 require __DIR__ . '/read-time.php';
 require __DIR__ . '/navigations_archors.php';
 require __DIR__ . '/optimizations/optimizations.php';

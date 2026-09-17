@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 if (!class_exists('ColtmanRegisterPost')) {
 
@@ -69,33 +70,53 @@ if (!class_exists('ColtmanRegisterPost')) {
                     $this->post_name = $post_name;
 
                     $this->labels = [
-                        'name'                  => _x( $labelArgs['name'], 'Post Type General Name', $labelArgs['domain'] ),
-                        'singular_name'         => _x( $labelArgs['name'], 'Post Type Singular Name', $labelArgs['domain'] ),
-                        'menu_name'             => __( $labelArgs['name'], $labelArgs['domain'] ),
-                        'name_admin_bar'        => __( $labelArgs['item'], $labelArgs['domain'] ),
-                        'archives'              => __(  $labelArgs['item'] . ' Archivos', $labelArgs['domain'] ),
-                        'attributes'            => __(  $labelArgs['item'] . ' atributos', $labelArgs['domain'] ),
-                        'parent_item_colon'     => __( 'Parent '. $labelArgs['item'].':', $labelArgs['domain'] ),
-                        'all_items'             => __( 'All '. $labelArgs['name'], $labelArgs['domain'] ),
-                        'add_new_item'          => __( 'Add new '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'add_new'               => __( 'Add ', $labelArgs['domain'] ),
-                        'new_item'              => __( 'New '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'edit_item'             => __( 'Edit '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'update_item'           => __( 'Update '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'view_item'             => __( 'View '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'view_items'            => __( 'View '. $labelArgs['name'], $labelArgs['domain'] ),
-                        'search_items'          => __( 'Search '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'not_found'             => __( 'Not found', $labelArgs['domain'] ),
-                        'not_found_in_trash'    => __( 'Not found in Trash', $labelArgs['domain'] ),
-                        'featured_image'        => __( 'Featured Image', $labelArgs['domain'] ),
-                        'set_featured_image'    => __( 'Set featured image', $labelArgs['domain'] ),
-                        'remove_featured_image' => __( 'Remove featured image', $labelArgs['domain'] ),
-                        'use_featured_image'    => __( 'Use as featured image', $labelArgs['domain'] ),
-                        'insert_into_item'      => __( 'Insert into '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'uploaded_to_this_item' => __( 'Uploaded to this '. $labelArgs['item'], $labelArgs['domain'] ),
-                        'items_list'            => __( 'Items '. $labelArgs['name'], $labelArgs['domain'] ),
-                        'items_list_navigation' => __(  'Items '.$labelArgs['item'], $labelArgs['domain'] ),
-                        'filter_items_list'     => __( 'Filter '.$labelArgs['item'].'', $labelArgs['domain'] ),
+                        // translators: %1$s: post type plural name
+                        'name'                  => sprintf( _x( '%1$s', 'Post Type General Name', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: post type singular name
+                        'singular_name'         => sprintf( _x( '%1$s', 'Post Type Singular Name', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: post type plural name
+                        'menu_name'             => sprintf( __( '%1$s', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: singular post type item name
+                        'name_admin_bar'        => sprintf( __( '%1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'archives'              => sprintf( __( '%1$s Archivos', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'attributes'            => sprintf( __( '%1$s atributos', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'parent_item_colon'     => sprintf( __( 'Parent %1$s:', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: post type plural name
+                        'all_items'             => sprintf( __( 'All %1$s', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: singular post type item name
+                        'add_new_item'          => sprintf( __( 'Add new %1$s', 'coltman' ), $labelArgs['item'] ),
+                        'add_new'               => __( 'Add ', 'coltman' ),
+                        // translators: %1$s: singular post type item name
+                        'new_item'              => sprintf( __( 'New %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'edit_item'             => sprintf( __( 'Edit %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'update_item'           => sprintf( __( 'Update %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'view_item'             => sprintf( __( 'View %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: post type plural name
+                        'view_items'            => sprintf( __( 'View %1$s', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: singular post type item name
+                        'search_items'          => sprintf( __( 'Search %1$s', 'coltman' ), $labelArgs['item'] ),
+                        'not_found'             => __( 'Not found', 'coltman' ),
+                        'not_found_in_trash'    => __( 'Not found in Trash', 'coltman' ),
+                        'featured_image'        => __( 'Featured Image', 'coltman' ),
+                        'set_featured_image'    => __( 'Set featured image', 'coltman' ),
+                        'remove_featured_image' => __( 'Remove featured image', 'coltman' ),
+                        'use_featured_image'    => __( 'Use as featured image', 'coltman' ),
+                        // translators: %1$s: singular post type item name
+                        'insert_into_item'      => sprintf( __( 'Insert into %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'uploaded_to_this_item' => sprintf( __( 'Uploaded to this %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: post type plural name
+                        'items_list'            => sprintf( __( 'Items %1$s', 'coltman' ), $labelArgs['name'] ),
+                        // translators: %1$s: singular post type item name
+                        'items_list_navigation' => sprintf( __( 'Items %1$s', 'coltman' ), $labelArgs['item'] ),
+                        // translators: %1$s: singular post type item name
+                        'filter_items_list'     => sprintf( __( 'Filter %1$s', 'coltman' ), $labelArgs['item'] ),
                     ];
                     $this->args =[
                         'label'                 => $labelArgs['name'],
