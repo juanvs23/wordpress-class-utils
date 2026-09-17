@@ -68,12 +68,9 @@ if(!class_exists('ColtmanRegisterTaxonomy')){
             $this->post_types = $post_types;
 
             $this->labels = [
-                        // translators: %1$s: taxonomy plural name
-                        'name'                       => sprintf( _x( '%1$s', 'Taxonomy General Name', 'coltman' ), $config['plural_name'] ),
-                        // translators: %1$s: taxonomy singular name
-                        'singular_name'              => sprintf( _x( '%1$s', 'Taxonomy Singular Name', 'coltman' ), $config['singular_name'] ),
-                        // translators: %1$s: taxonomy plural name
-                        'menu_name'                  => sprintf( __( '%1$s', 'coltman' ), $config['plural_name'] ),
+                        'name'                       => $config['plural_name'],
+                        'singular_name'              => $config['singular_name'],
+                        'menu_name'                  => $config['plural_name'],
                         // translators: %1$s: taxonomy plural name
                         'all_items'                  => sprintf( __( 'All %1$s', 'coltman' ), $config['plural_name'] ),
                         // translators: %1$s: taxonomy item name

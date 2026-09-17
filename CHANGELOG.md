@@ -6,6 +6,13 @@ Versiones siguiendo [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [1.15.7] — 2026-09-16
+
+### Corregido — Plugin Check: NoEmptyStrings (7 errores)
+
+- `class-post-types.php` y `class-taxonomy.php`: los labels `name`, `singular_name`, `menu_name` y `name_admin_bar` pasaban por `sprintf( __( '%1$s', 'coltman' ) )` con un string compuesto SOLO de placeholder (contenido no traducible → `WordPress.WP.I18n.NoEmptyStrings`). Ahora se asignan directamente desde la config (`$labelArgs` / `$config`). Sin cambio de comportamiento (el sprintf era identidad).
+- Suite: 256 tests / 470 assertions verdes.
+
 ## [1.15.6] — 2026-09-16
 
 ### Corregido — Cumplimiento wordpress.org (Plugin Check)

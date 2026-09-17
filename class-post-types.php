@@ -70,14 +70,10 @@ if (!class_exists('ColtmanRegisterPost')) {
                     $this->post_name = $post_name;
 
                     $this->labels = [
-                        // translators: %1$s: post type plural name
-                        'name'                  => sprintf( _x( '%1$s', 'Post Type General Name', 'coltman' ), $labelArgs['name'] ),
-                        // translators: %1$s: post type singular name
-                        'singular_name'         => sprintf( _x( '%1$s', 'Post Type Singular Name', 'coltman' ), $labelArgs['name'] ),
-                        // translators: %1$s: post type plural name
-                        'menu_name'             => sprintf( __( '%1$s', 'coltman' ), $labelArgs['name'] ),
-                        // translators: %1$s: singular post type item name
-                        'name_admin_bar'        => sprintf( __( '%1$s', 'coltman' ), $labelArgs['item'] ),
+                        'name'                  => $labelArgs['name'],
+                        'singular_name'         => $labelArgs['name'],
+                        'menu_name'             => $labelArgs['name'],
+                        'name_admin_bar'        => $labelArgs['item'],
                         // translators: %1$s: singular post type item name
                         'archives'              => sprintf( __( '%1$s Archivos', 'coltman' ), $labelArgs['item'] ),
                         // translators: %1$s: singular post type item name
