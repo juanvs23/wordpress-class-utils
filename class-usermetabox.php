@@ -107,6 +107,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
          * @param WP_User $user  Objeto del usuario.
          */
         private function render_field_row( $field, $user ) {
+            // Un grupo no es un input propio: se renderiza como bloque con sus
+            // sub-campos (mismos meta keys que los datos ya guardados).
+            if ( isset( $field['type'] ) && $field['type'] === 'group' ) {
+                $this->render_group( $field['id'], $field, (int) $user->ID );
+                return;
+            }
             $value   = $this->get_user_meta_value( $user->ID, $field );
             $checked = $this->get_checked( $user->ID, $field );
             if ( isset( $field['type'] ) && $field['type'] === 'media' ) {
@@ -196,6 +202,108 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         }
 
         /**
+         * Esquema dinámico del grupo (campos añadidos desde el field manager).
+         *
+         * Compartido con metabox/term meta: la opción es global por id de grupo.
+         *
+         * @param string $group_id Id del grupo.
+         * @return array<int, array{key: string, type: string, label: string}>
+         */
+        private function get_group_schema( string $group_id ): array {
+            $schema = get_option( '_coltman_group_schema_' . $group_id, [] );
+            return is_array( $schema ) ? $schema : [];
+        }
+
+        /**
+         * Renderiza un campo tipo 'group' con todos sus sub-campos.
+         *
+         * Espejo del render de term meta, con los valores leídos de usermeta.
+         * Los sub-campos usan su propio id como meta key (no el id del grupo).
+         *
+         * @param string  $group_id Id del grupo.
+         * @param array   $field    Configuración del grupo.
+         * @param WP_User $user     Usuario en edición.
+         */
+        private function render_group( string $group_id, array $field, int $user_id ): void {
+            $gid            = esc_attr( $group_id );
+            $label          = isset( $field['label'] ) ? esc_html( $field['label'] ) : '';
+            $static_fields  = isset( $field['fields'] ) ? $field['fields'] : [];
+            $dynamic_schema = $this->get_group_schema( $group_id );
+            $static_ids     = array_column( $static_fields, 'id' );
+            $nonce          = wp_create_nonce( 'coltman_group_schema' );
+
+            echo '<tr class="coltman-group-row"><th scope="row">' . $label . '</th><td>';
+            echo '<div class="coltman-group-header">';
+            echo '<span class="coltman-group-label">' . $label . '</span>';
+            echo '<button type="button" class="coltman-group-toggle" data-group="' . $gid . '" aria-expanded="true">&#9650;</button>';
+            echo '</div>';
+            if ( ! empty( $field['description'] ) ) {
+                echo '<p class="w-full mb-2 text-sm text-gray-500 description">' . esc_html( $field['description'] ) . '</p>';
+            }
+            echo '<div class="coltman-group-body" id="coltman-group-' . $gid . '">';
+
+            foreach ( $static_fields as $sub_field ) {
+                $sub_id   = $sub_field['id'];
+                $sub_val  = (string) get_user_meta( $user_id, $sub_id, true );
+                if ( '' === $sub_val && isset( $sub_field['default'] ) ) {
+                    $sub_val = (string) $sub_field['default'];
+                }
+                echo '<div class="coltman-group-field-row">';
+                echo '<label for="' . esc_attr( $sub_id ) . '">' . ( isset( $sub_field['label'] ) ? esc_html( $sub_field['label'] ) : '' ) . '</label>';
+                $this->render_field( $sub_field, $sub_val, '' );
+                echo '</div>';
+            }
+
+            foreach ( $dynamic_schema as $df ) {
+                if ( in_array( $df['key'], $static_ids, true ) ) {
+                    continue;
+                }
+                $sub     = [ 'id' => $df['key'], 'type' => $df['type'], 'label' => $df['label'] ];
+                $dyn_val = (string) get_user_meta( $user_id, $df['key'], true );
+                echo '<div class="coltman-group-field-row" data-dynamic-key="' . esc_attr( $df['key'] ) . '">';
+                echo '<label for="' . esc_attr( $df['key'] ) . '">' . esc_html( $df['label'] ) . '</label>';
+                $this->render_field( $sub, $dyn_val, '' );
+                echo '</div>';
+            }
+
+            $dyn_visible = array_values( array_filter( $dynamic_schema, static fn( $df ) => ! in_array( $df['key'], $static_ids, true ) ) );
+            echo '<div class="coltman-field-manager" data-group="' . $gid . '" data-nonce="' . esc_attr( $nonce ) . '">';
+            echo '<div class="coltman-field-manager-toggle-row">';
+            echo '<button type="button" class="coltman-field-manager-toggle" aria-expanded="false">&#9881; ' . esc_html__( 'Manage fields', 'coltman' ) . '</button>';
+            echo '</div>';
+            echo '<div class="coltman-field-manager-panel" style="display:none">';
+            echo '<div class="coltman-dynamic-fields-list">';
+            if ( empty( $dyn_visible ) ) {
+                echo '<p class="coltman-no-dynamic-fields">' . esc_html__( 'No dynamic fields added yet.', 'coltman' ) . '</p>';
+            } else {
+                foreach ( $dyn_visible as $df ) {
+                    echo '<div class="coltman-dynamic-field-item" data-key="' . esc_attr( $df['key'] ) . '">';
+                    echo '<span class="coltman-dynamic-field-info">' . esc_html( $df['type'] ) . ' &middot; ' . esc_html( $df['label'] ) . ' <code>' . esc_html( $df['key'] ) . '</code></span>';
+                    echo '<button type="button" class="coltman-remove-dynamic-field" data-key="' . esc_attr( $df['key'] ) . '">&#10005;</button>';
+                    echo '</div>';
+                }
+            }
+            echo '</div>';
+            echo '<div class="coltman-add-field-form">';
+            echo '<select class="coltman-new-field-type">';
+            echo '<option value="text">' . esc_html__( 'Text', 'coltman' ) . '</option>';
+            echo '<option value="textarea">' . esc_html__( 'Textarea', 'coltman' ) . '</option>';
+            echo '<option value="number">' . esc_html__( 'Number', 'coltman' ) . '</option>';
+            echo '<option value="email">' . esc_html__( 'Email', 'coltman' ) . '</option>';
+            echo '<option value="url">URL</option>';
+            echo '</select>';
+            echo '<input type="text" class="coltman-new-field-key" placeholder="' . esc_attr__( 'field_key', 'coltman' ) . '">';
+            echo '<input type="text" class="coltman-new-field-label" placeholder="' . esc_attr__( 'Field Label', 'coltman' ) . '">';
+            echo '<button type="button" class="coltman-add-dynamic-field">+ ' . esc_html__( 'Add field', 'coltman' ) . '</button>';
+            echo '</div>';
+            echo '<p class="coltman-field-manager-note">' . esc_html__( '* Dynamic fields apply to all users with this group.', 'coltman' ) . '</p>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+            echo '</td></tr>';
+        }
+
+        /**
          * Obtiene el valor del meta para un usuario.
          *
          * @param int   $user_id ID del usuario.
@@ -251,6 +359,34 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
                 // Sanitización según el tipo
                 switch ( $type ) {
+                    case 'group':
+                        // El grupo no tiene meta propia: cada sub-campo guarda con
+                        // su propio id (mismo esquema que metabox y term meta).
+                        $all_sub_fields = isset( $field['fields'] ) ? $field['fields'] : [];
+                        $dyn_schema     = $this->get_group_schema( $field_id );
+                        $static_sub_ids = array_column( $all_sub_fields, 'id' );
+                        foreach ( $dyn_schema as $df ) {
+                            if ( ! in_array( $df['key'], $static_sub_ids, true ) ) {
+                                $all_sub_fields[] = [ 'id' => $df['key'], 'type' => $df['type'], 'label' => $df['label'] ];
+                            }
+                        }
+                        foreach ( $all_sub_fields as $sub_field ) {
+                            $sub_id = isset( $sub_field['id'] ) ? $sub_field['id'] : '';
+                            if ( '' === $sub_id || ! isset( $_POST[ $sub_id ] ) ) {
+                                continue;
+                            }
+                            $sub_val = $_POST[ $sub_id ];
+                            switch ( isset( $sub_field['type'] ) ? $sub_field['type'] : 'text' ) {
+                                case 'textarea':     update_user_meta( $user_id, $sub_id, wp_kses_post( (string) $sub_val ) ); break;
+                                case 'email':        update_user_meta( $user_id, $sub_id, sanitize_email( (string) $sub_val ) ); break;
+                                case 'url':          update_user_meta( $user_id, $sub_id, esc_url_raw( (string) $sub_val ) ); break;
+                                case 'editor':       update_user_meta( $user_id, $sub_id, wp_filter_post_kses( (string) $sub_val ) ); break;
+                                case 'get_posts':
+                                case 'relationship': update_user_meta( $user_id, $sub_id, is_array( $sub_val ) ? json_encode( $sub_val ) : '[]' ); break;
+                                default:             update_user_meta( $user_id, $sub_id, sanitize_text_field( (string) $sub_val ) );
+                            }
+                        }
+                        continue 2;
                     case 'media':
                         $value = isset( $field['return'] ) && $field['return'] === 'id'
                             ? (string) absint( $value )
